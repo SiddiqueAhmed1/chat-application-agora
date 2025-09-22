@@ -1,5 +1,16 @@
-body {
-  text-align: center;
-  width: 600px;
-  margin: auto;
+@import "tailwindcss";
+
+@layer baes {
+  input {
+    @apply border border-green-500 py-3 rounded outline-0 focus-within:border-green-700 focus-within:border-2 px-2 caret-green-700 text-[20px];
+  }
+}
+
+@layer components {
+  .card {
+    @apply bg-white shadow-2xl p-12 rounded-md w-[30%] border border-neutral-300;
+  }
+  .button {
+    @apply bg-green-400 hover:bg-green-500 transition py-3 rounded-md font-semibold text-xl cursor-pointer;
+  }
 }

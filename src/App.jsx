@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import "./App.css";
 import AgoraChat from "agora-chat";
+import { toast } from "react-toastify";
 
 function App() {
   // Replaces <Your app key> with your app key.
@@ -22,7 +23,9 @@ function App() {
         accessToken: token,
       });
     } else {
-      addLog("Please enter userId and token");
+      toast.error("Please enter userId and Token", {
+        position: "top-center",
+      });
     }
   };
 
@@ -51,10 +54,14 @@ function App() {
         addLog(`Message send to ${peerId}: ${message}`);
         setMessage("");
       } catch (error) {
-        addLog(`Message send failed: ${error.message}`);
+        toast.error(`Message send failed: ${error.message}`, {
+          position: "top-center",
+        });
       }
     } else {
-      addLog("Please enter message content");
+      toast.warning("Please enter message content", {
+        position: "top-center",
+      });
     }
   };
 
@@ -169,7 +176,9 @@ function App() {
           }}
         >
           {logs.map((log, index) => (
-            <div key={index}>{log}</div>
+            <div className="text-sky-600 font-semibold" key={index}>
+              {log}
+            </div>
           ))}
         </div>
       </div>
