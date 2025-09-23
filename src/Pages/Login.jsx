@@ -1,28 +1,49 @@
 import { useEffect, useRef, useState } from "react";
+import AgoraChat from "agora-chat";
+import { toast } from "react-toastify";
+import { useNavigate } from "react-router-dom";
 
 const Login = () => {
+  const appKey = "711398512#1603074";
   const [userId, setUserId] = useState("");
   const [token, setToken] = useState("");
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const chatClient = useRef(null);
-
-  console.log("this is userid", userId);
+  const navigate = useNavigate();
 
   const handleLogin = () => {
-    if (userId || token) {
+    if (userId && token) {
       chatClient.current.open({
         user: userId,
         accessToken: token,
       });
+      toast.success("User Logged in succesfully", {
+        position: "top-center",
+      });
+      navigate("/messages");
     } else {
-      alert("UserId & Token need");
+      toast.error("UserId & Token need", {
+        position: "top-center",
+      });
     }
   };
 
-  useEffect(() => {}, []);
+  useEffect(() => {
+    // initializes the agora client in web
+    chatClient.current = new AgoraChat.connection({
+      appKey: appKey,
+    });
+    // on login mode
+    chatClient.current.addEventHandler("connection&message", {
+      onConnected: () => {
+        setIsLoggedIn(true);
+      },
+    });
+  }, []);
 
   return (
     <>
-      <section className=" h-[700px] flex justify-center items-center bg-amber-50">
+      <section className=" h-[700px] flex  items-center bg-neutral-100 flex-col justify-evenly text-green-700 font-semibold font-sans ">
         <div className="card mx-auto ">
           <h1 className="text-3xl text-center mb-6 font-semibold  pb-3 ">
             Agora Chat
@@ -50,10 +71,17 @@ const Login = () => {
               type="text"
               placeholder="Token"
             />
-            <button onClick={handleLogin} className="button my-3">
+            <button onClick={handleLogin} className="button my-3 text-white">
               Login
             </button>
           </div>
+        </div>
+        <div>
+          <h1>
+            Design and Developed by{" "}
+            <span className="text-red-500 text-xl  inline-block">&hearts;</span>{" "}
+            Siddique
+          </h1>
         </div>
       </section>
     </>
