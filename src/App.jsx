@@ -102,6 +102,7 @@ function App() {
       },
       onError: (error) => {
         addLog(`on error: ${error.message}`);
+        console.log(error);
       },
     });
   }, []);

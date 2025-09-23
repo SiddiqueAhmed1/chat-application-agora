@@ -6,7 +6,7 @@ import Messages from "../Pages/Messages";
 const browserRouter = createBrowserRouter([
   {
     path: "/",
-    element: <h1 className="text-9xl font-semibold">This is home page</h1>,
+    element: <App />,
   },
   {
     path: "/login",

@@ -17,15 +17,22 @@ const Login = () => {
         user: userId,
         accessToken: token,
       });
-      toast.success("User Logged in succesfully", {
-        position: "top-center",
-      });
-      navigate("/messages");
     } else {
       toast.error("UserId & Token need", {
         position: "top-center",
       });
     }
+  };
+
+  // login check
+  const handleSubmit = () => {
+    if (isLoggedIn) {
+      toast.success("User Logged in succesfully", {
+        position: "top-center",
+      });
+      navigate("/messages");
+    }
+    return;
   };
 
   useEffect(() => {
@@ -38,8 +45,23 @@ const Login = () => {
       onConnected: () => {
         setIsLoggedIn(true);
       },
+      onDisconnected: () => {
+        setIsLoggedIn(false);
+        toast.info("User logged out succesfully", {
+          position: "top-center",
+        });
+      },
+      onError: (error) => {
+        toast.error(error, {
+          position: "top-center",
+        });
+      },
     });
   }, []);
+
+  useEffect(() => {
+    handleSubmit();
+  }, [isLoggedIn]);
 
   return (
     <>
