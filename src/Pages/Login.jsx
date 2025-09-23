@@ -10,6 +10,7 @@ const Login = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const chatClient = useRef(null);
   const navigate = useNavigate();
+  const [logout, setLogout] = useState(false);
 
   const handleLogin = () => {
     if (userId && token) {
@@ -46,13 +47,16 @@ const Login = () => {
         setIsLoggedIn(true);
       },
       onDisconnected: () => {
+        setLogout(true);
         setIsLoggedIn(false);
-        toast.info("User logged out succesfully", {
-          position: "top-center",
-        });
+        if (logout) {
+          toast.info("User logged out succesfully", {
+            position: "top-center",
+          });
+        }
       },
-      onError: (error) => {
-        toast.error(error, {
+      onError: () => {
+        toast.error("UserId or Token wrong", {
           position: "top-center",
         });
       },
