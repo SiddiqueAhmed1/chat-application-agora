@@ -31,7 +31,11 @@ const Login = () => {
       toast.success("User Logged in succesfully", {
         position: "top-center",
       });
-      navigate("/messages");
+      navigate("/messages", {
+        state: {
+          accessToken: token,
+        },
+      });
     }
     return;
   };
