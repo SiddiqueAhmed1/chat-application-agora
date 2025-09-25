@@ -136,62 +136,67 @@ const Messages = () => {
               </span>
             </div>
           </div>
-          <div className="chat-area flex text-white flex-1 flex-col overflow-y-auto">
-            <h1>On message</h1>
-            <h1>On message</h1>
-            <h1>On message</h1>
-            <h1>On message</h1>
-            <h1>On message</h1>
-            <h1>On message</h1>
-            <h1>On message</h1>
-            <h1>On message</h1>
-            <h1>On message</h1>
-            <h1>On message</h1>
-            <h1>On message</h1>
-            <h1>On message</h1>
-            <h1>On message</h1>
-            <h1>On message</h1>
-            <h1>On message</h1>
-            <h1>On message</h1>
-            <h1>On message</h1>
-            <h1>On message</h1>
-            <h1>On message</h1>
-            <h1>On message</h1>
-            <h1>On message</h1>
-            <h1>On message</h1>
-            <h1>On message</h1>
-            <h1>On message</h1>
-            <h1>On message</h1>
-            <h1>On message</h1>
-            <h1>On message</h1>
-            <h1>On message</h1>
-            <h1>On message</h1>
-            <h1>On message</h1>
-            <h1>On message</h1>
-            <h1>On message</h1>
-            <h1>On message</h1>
-            <h1>On message</h1>
-            <h1>On message</h1>
-            <h1>On message</h1>
-            <h1>On message</h1>
-            <h1>On message</h1>
-            <h1>On message</h1>
-            <h1>On message</h1>
-            <h1>On message</h1>
-            <h1>On message</h1>
-            <h1>On message</h1>
-            <h1>On message</h1>
-            <h1>On message</h1>
-            <h1>On message</h1>
-            <h1>On message</h1>
-            <h1>On message</h1>
-            <h1>On message</h1>
-            <h1>On message</h1>
-            <h1>On message</h1>
-            <h1>On message</h1>
-            <h1>On message</h1>
-            <h1>On message</h1>
-            <h1>On message</h1>
+          <div className="chat-area flex text-white flex-1 flex-col overflow-y-auto m-5">
+            <div className="text-right mr-5">
+              <h1>On message</h1>
+              <h1>On message</h1>
+              <h1>On message</h1>
+              <h1>On message</h1>
+              <h1>On message</h1>
+              <h1>On message</h1>
+              <h1>On message</h1>
+              <h1>On message</h1>
+              <h1>On message</h1>
+              <h1>On message</h1>
+              <h1>On message</h1>
+              <h1>On message</h1>
+              <h1>On message</h1>
+              <h1>On message</h1>
+              <h1>On message</h1>
+              <h1>On message</h1>
+              <h1>On message</h1>
+              <h1>On message</h1>
+              <h1>On message</h1>
+              <h1>On message</h1>
+              <h1>On message</h1>
+              <h1>On message</h1>
+              <h1>On message</h1>
+              <h1>On message</h1>
+              <h1>On message</h1>
+              <h1>On message</h1>
+              <h1>On message</h1>
+              <h1>On message</h1>
+              <h1>On message</h1>
+              <h1>On message</h1>
+              <h1>On message</h1>
+              <h1>On message</h1>
+              <h1>On message</h1>
+              <h1>On message</h1>
+              <h1>On message</h1>
+              <h1>On message</h1>
+            </div>
+            <div>
+              {" "}
+              <h1>On message</h1>
+              <h1>On message</h1>
+              <h1>On message</h1>
+              <h1>On message</h1>
+              <h1>On message</h1>
+              <h1>On message</h1>
+              <h1>On message</h1>
+              <h1>On message</h1>
+              <h1>On message</h1>
+              <h1>On message</h1>
+              <h1>On message</h1>
+              <h1>On message</h1>
+              <h1>On message</h1>
+              <h1>On message</h1>
+              <h1>On message</h1>
+              <h1>On message</h1>
+              <h1>On message</h1>
+              <h1>On message</h1>
+              <h1>On message</h1>
+            </div>
           </div>
           <div className="chat-input flex justify-between items-center gap-3 border-t border-neutral-500 bg-white/10 backdrop-blur-2xl p-5 relative">
             <span>
