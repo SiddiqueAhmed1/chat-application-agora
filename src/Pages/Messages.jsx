@@ -3,7 +3,7 @@ import { BsSend } from "react-icons/bs";
 import { FaRegSmile } from "react-icons/fa";
 import { FiLink } from "react-icons/fi";
 import { HiOutlineDotsHorizontal } from "react-icons/hi";
-import agoraChat from "agora-chat";
+import AgoraChat from "agora-chat";
 
 import {
   IoCallOutline,
@@ -20,18 +20,18 @@ const Messages = () => {
   const chatClient = useRef(null);
   const [isLogout, setIsLogout] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [message, setMessage] = useState("");
-  const [storeMessages, setStoreMessages] = useState([
+  const [newMessage, setNewMessage] = useState("");
+  const [messages, setMessage] = useState([
     {
-      userId: "",
+      userId: location?.state?.userId,
       msgContent: "",
-      time: null,
+      time: new Date(Date.now()),
     },
   ]);
 
   useEffect(() => {
     // initializes the agora client in web
-    chatClient.current = new agoraChat.connection({
+    chatClient.current = new AgoraChat.connection({
       appKey: appKey,
     });
     // on login mode
@@ -62,18 +62,18 @@ const Messages = () => {
 
   // submit message
   const handleSubmitMessage = async () => {
-    if (message.trim()) {
+    if (newMessage.trim()) {
       try {
-        const options = {
-          chatType: "singleChat", // Sets the chat type as a one-to-one chat.
-          type: "txt", // Sets the message type.
-          to: peerId, // Sets the recipient of the message with user ID.
-          msg: message, // Sets the message content.
+        const msgOptions = {
+          chatType: "singleChat",
+          type: "txt",
+          to: "Shahnewaz",
+          msg: messages.msgContent,
         };
-        let msg = AgoraChat.message.create(options);
+        let msg = AgoraChat.message.create(msgOptions);
 
         await chatClient.current.send(msg);
-        addLog(`Message send to ${peerId}: ${message}`);
+        setMessage((prevMessage) => [...prevMessage, {}]);
         setMessage("");
       } catch (error) {
         toast.error(`Message send failed: ${error.message}`, {
@@ -89,7 +89,7 @@ const Messages = () => {
 
   return (
     <>
-      <div className="flex h-screen bg-gradient-to-bl from-green-900 via-purple-900 to-green-900 ">
+      <div className="flex h-screen bg-gradient-to-bl from-green-900 via-purple-950 to-green-900 ">
         <div className="sidebar overflow-y-auto border-r border-neutral-500 w-48 lg:w-80 bg-white/10 backdrop-blur-2xl">
           <div className="sidebar-header  text-white border-b border-neutral-500 p-5">
             <h1 className="text-2xl font-semibold">Agora Chat</h1>
@@ -105,7 +105,7 @@ const Messages = () => {
               className="w-full outline-none focus-within:border-green-500 focus-within:outline-none h-11 text-white border-none text-[12px]"
             />
           </div>
-          <div className="sidebar-users-list mx-6">
+          <div className="sidebar-users-list mx-6 text-white">
             <h1>Siddique AHmed</h1>
             <h1>Siddique AHmed</h1>
           </div>
@@ -119,7 +119,9 @@ const Messages = () => {
                 alt=""
               />
               <div className="chat_header_info">
-                <h1 className="font-semibold text-[17px]">Abdur Rahim</h1>
+                <h1 className="font-semibold text-[17px]">
+                  {location?.state?.userId}
+                </h1>
                 <p className="text-xs text-neutral-300 ">Web Developer</p>
               </div>
             </div>
@@ -146,15 +148,7 @@ const Messages = () => {
               <h1>On message</h1>
               <h1>On message</h1>
               <h1>On message</h1>
-              <h1>On message</h1>
-              <h1>On message</h1>
-              <h1>On message</h1>
-              <h1>On message</h1>
-              <h1>On message</h1>
-              <h1>On message</h1>
-              <h1>On message</h1>
-              <h1>On message</h1>
-              <h1>On message</h1>
+
               <h1>On message</h1>
               <h1>On message</h1>
               <h1>On message</h1>
@@ -204,9 +198,9 @@ const Messages = () => {
             </span>
             <div className="flex flex-1 ">
               <input
-                name="message"
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
+                name="newMessage"
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
                 type="text"
                 placeholder="Message"
                 className="bg-white/10 text-white "
@@ -217,9 +211,9 @@ const Messages = () => {
             </span>
             <button
               onClick={handleSubmitMessage}
-              disabled={!message.trim()}
+              disabled={!newMessage.trim()}
               className={`hover:text-2xl text-lg transition-colors   rounded-md p-2 ${
-                !message.trim()
+                !newMessage.trim()
                   ? "cursor-not-allowed bg-gradient-to-br from-neutral-400 to-neutral-500"
                   : "cursor-pointer bg-gradient-to-br from-green-500 to-pink-500"
               }  w-12 h-12 flex justify-center items-center`}

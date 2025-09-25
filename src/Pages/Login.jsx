@@ -24,6 +24,8 @@ const Login = () => {
     }
   };
 
+  console.log("user", chatClient?.current?.user);
+
   // login check
   const handleSubmit = () => {
     if (isLoggedIn) {
@@ -47,7 +49,7 @@ const Login = () => {
       appKey: appKey,
     });
     // on login mode
-    chatClient.current.addEventHandler("connection&message", {
+    chatClient.current.addEventHandler("connectionHandler", {
       onConnected: () => {
         setIsLoggedIn(true);
       },
