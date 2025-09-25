@@ -24,8 +24,6 @@ const Login = () => {
     }
   };
 
-  console.log("user", chatClient?.current?.user);
-
   // login check
   const handleSubmit = () => {
     if (isLoggedIn) {

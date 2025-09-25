@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import "./App.css";
 import AgoraChat from "agora-chat";
 import { toast } from "react-toastify";
+import { useNavigate } from "react-router-dom";
 
 function App() {
   // Replaces <Your app key> with your app key.
@@ -13,6 +14,11 @@ function App() {
   const [message, setMessage] = useState("");
   const [logs, setLogs] = useState([]);
   const chatClient = useRef(null);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    navigate("/login");
+  });
 
   // Logs into Agora Chat.
   const handleLogin = () => {

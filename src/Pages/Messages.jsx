@@ -21,6 +21,7 @@ const Messages = () => {
   const [isLogout, setIsLogout] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [newMessage, setNewMessage] = useState("");
+  const [isMyMsg, setIsMyMsg] = useState(null);
   const [messages, setMessage] = useState([
     {
       userId: location?.state?.userId,
@@ -36,6 +37,10 @@ const Messages = () => {
     });
     // on login mode
     chatClient.current.addEventHandler("connection&message", {
+      // Occurs when the app is connected to Agora Chat.
+      onConnected: () => {
+        setIsLoggedIn(true);
+      },
       onDisconnected: () => {
         setIsLogout(true);
         setIsLoggedIn(false);
@@ -45,7 +50,10 @@ const Messages = () => {
           });
         }
       },
-      onTextMessage: () => {},
+      onTextMessage: (message) => {
+        const isMe = message.from === chatClient.current.user;
+        setIsMyMsg(isMe);
+      },
       onError: () => {
         toast.error("UserId or Token wrong", {
           position: "top-center",
@@ -64,17 +72,19 @@ const Messages = () => {
   const handleSubmitMessage = async () => {
     if (newMessage.trim()) {
       try {
-        const msgOptions = {
-          chatType: "singleChat",
-          type: "txt",
-          to: "Shahnewaz",
-          msg: messages.msgContent,
-        };
-        let msg = AgoraChat.message.create(msgOptions);
+        if (isLoggedIn) {
+          const msgOptions = {
+            chatType: "singleChat",
+            type: "txt",
+            to: "Shahnewaz",
+            msg: messages.msgContent,
+          };
+          let msg = AgoraChat.message.create(msgOptions);
 
-        await chatClient.current.send(msg);
-        setMessage((prevMessage) => [...prevMessage, {}]);
-        setMessage("");
+          await chatClient.current.send(msg);
+          setMessage((prevMessage) => [...prevMessage, messages]);
+          setMessage("");
+        }
       } catch (error) {
         toast.error(`Message send failed: ${error.message}`, {
           position: "top-center",
@@ -139,58 +149,12 @@ const Messages = () => {
             </div>
           </div>
           <div className="chat-area flex text-white flex-1 flex-col overflow-y-auto m-5">
-            <div className="text-right mr-5">
-              <h1>On message</h1>
-              <h1>On message</h1>
-              <h1>On message</h1>
-              <h1>On message</h1>
-              <h1>On message</h1>
-              <h1>On message</h1>
-              <h1>On message</h1>
-              <h1>On message</h1>
-
-              <h1>On message</h1>
-              <h1>On message</h1>
-              <h1>On message</h1>
-              <h1>On message</h1>
-              <h1>On message</h1>
-              <h1>On message</h1>
-              <h1>On message</h1>
-              <h1>On message</h1>
-              <h1>On message</h1>
-              <h1>On message</h1>
-              <h1>On message</h1>
-              <h1>On message</h1>
-              <h1>On message</h1>
-              <h1>On message</h1>
-              <h1>On message</h1>
-              <h1>On message</h1>
-              <h1>On message</h1>
-              <h1>On message</h1>
-              <h1>On message</h1>
-            </div>
-            <div>
-              {" "}
-              <h1>On message</h1>
-              <h1>On message</h1>
-              <h1>On message</h1>
-              <h1>On message</h1>
-              <h1>On message</h1>
-              <h1>On message</h1>
-              <h1>On message</h1>
-              <h1>On message</h1>
-              <h1>On message</h1>
-              <h1>On message</h1>
-              <h1>On message</h1>
-              <h1>On message</h1>
-              <h1>On message</h1>
-              <h1>On message</h1>
-              <h1>On message</h1>
-              <h1>On message</h1>
-              <h1>On message</h1>
-              <h1>On message</h1>
-              <h1>On message</h1>
-            </div>
+            {messages.map((item, index) => (
+              <div key={index}>
+                <h1>{item.msgContent}</h1>
+                <p>{isMyMsg ? "You" : "Others"}</p>
+              </div>
+            ))}
           </div>
           <div className="chat-input flex justify-between items-center gap-3 border-t border-neutral-500 bg-white/10 backdrop-blur-2xl p-5 relative">
             <span>
