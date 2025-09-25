@@ -2,7 +2,7 @@
 
 @layer baes {
   input {
-    @apply border border-neutral-400 py-3 rounded-md outline-0 focus-within:border-neutral-400 focus-within:outline-2 focus-within:outline-green-600 px-2 caret-green-700 text-[16px] w-full;
+    @apply border border-neutral-400 py-3 px-4 rounded-2xl outline-0 focus-within:border-neutral-400 focus-within:outline-2 focus-within:outline-green-600   text-[16px] w-full;
   }
 }
 

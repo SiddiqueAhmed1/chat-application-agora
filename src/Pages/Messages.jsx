@@ -1,18 +1,58 @@
-import { useEffect } from "react";
-import { BsFillSendFill } from "react-icons/bs";
+import { useEffect, useRef, useState } from "react";
+import { BsSend } from "react-icons/bs";
 import { FaRegSmile } from "react-icons/fa";
 import { FiLink } from "react-icons/fi";
 import { HiOutlineDotsHorizontal } from "react-icons/hi";
+import agoraChat from "agora-chat";
+
 import {
   IoCallOutline,
   IoSearchOutline,
   IoVideocamOutline,
 } from "react-icons/io5";
 import { useLocation, useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
 
 const Messages = () => {
+  const appKey = "711398512#1603074";
   const location = useLocation();
   const navigate = useNavigate();
+  const chatClient = useRef(null);
+  const [isLogout, setIsLogout] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [message, setMessage] = useState("");
+  const [storeMessages, setStoreMessages] = useState([
+    {
+      userId: "",
+      msgContent: "",
+      time: null,
+    },
+  ]);
+
+  useEffect(() => {
+    // initializes the agora client in web
+    chatClient.current = new agoraChat.connection({
+      appKey: appKey,
+    });
+    // on login mode
+    chatClient.current.addEventHandler("connection&message", {
+      onDisconnected: () => {
+        setIsLogout(true);
+        setIsLoggedIn(false);
+        if (isLogout) {
+          toast.info("User logged out succesfully", {
+            position: "top-center",
+          });
+        }
+      },
+      onTextMessage: () => {},
+      onError: () => {
+        toast.error("UserId or Token wrong", {
+          position: "top-center",
+        });
+      },
+    });
+  }, []);
 
   useEffect(() => {
     if (!location?.state?.accessToken) {
@@ -20,9 +60,36 @@ const Messages = () => {
     }
   }, []);
 
+  // submit message
+  const handleSubmitMessage = async () => {
+    if (message.trim()) {
+      try {
+        const options = {
+          chatType: "singleChat", // Sets the chat type as a one-to-one chat.
+          type: "txt", // Sets the message type.
+          to: peerId, // Sets the recipient of the message with user ID.
+          msg: message, // Sets the message content.
+        };
+        let msg = AgoraChat.message.create(options);
+
+        await chatClient.current.send(msg);
+        addLog(`Message send to ${peerId}: ${message}`);
+        setMessage("");
+      } catch (error) {
+        toast.error(`Message send failed: ${error.message}`, {
+          position: "top-center",
+        });
+      }
+    } else {
+      toast.warning("Please enter message content", {
+        position: "top-center",
+      });
+    }
+  };
+
   return (
     <>
-      <div className="flex  h-screen bg-gradient-to-bl from-green-900 via-purple-900 to-green-900 ">
+      <div className="flex h-screen bg-gradient-to-bl from-green-900 via-purple-900 to-green-900 ">
         <div className="sidebar overflow-y-auto border-r border-neutral-500 w-48 lg:w-80 bg-white/10 backdrop-blur-2xl">
           <div className="sidebar-header  text-white border-b border-neutral-500 p-5">
             <h1 className="text-2xl font-semibold">Agora Chat</h1>
@@ -128,21 +195,32 @@ const Messages = () => {
           </div>
           <div className="chat-input flex justify-between items-center gap-3 border-t border-neutral-500 bg-white/10 backdrop-blur-2xl p-5 relative">
             <span>
-              <FiLink />
+              <FiLink color="white" size={22} />
             </span>
             <div className="flex flex-1 ">
               <input
+                name="message"
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
                 type="text"
                 placeholder="Message"
-                className="bg-white/10 text-white"
+                className="bg-white/10 text-white "
               />
             </div>
-            <span className="absolute right-16">
+            <span className="absolute right-24 hover:cursor-pointer">
               <FaRegSmile color="white" size={20} />
             </span>
-            <span className="bg-gradient-to-br from-green-500 to-neutral-500 p-2">
-              <BsFillSendFill />
-            </span>
+            <button
+              onClick={handleSubmitMessage}
+              disabled={!message.trim()}
+              className={`hover:text-2xl text-lg transition-colors   rounded-md p-2 ${
+                !message.trim()
+                  ? "cursor-not-allowed bg-gradient-to-br from-neutral-400 to-neutral-500"
+                  : "cursor-pointer bg-gradient-to-br from-green-500 to-pink-500"
+              }  w-12 h-12 flex justify-center items-center`}
+            >
+              <BsSend color="white" />
+            </button>
           </div>
         </div>
       </div>
