@@ -4,9 +4,9 @@ import { FaRegSmile } from "react-icons/fa";
 import { FiLink } from "react-icons/fi";
 import { HiOutlineDotsHorizontal } from "react-icons/hi";
 import AgoraChat from "agora-chat";
-
 import {
   IoCallOutline,
+  IoLogOutOutline,
   IoSearchOutline,
   IoVideocamOutline,
 } from "react-icons/io5";
@@ -21,22 +21,42 @@ const Messages = () => {
   const [isLogout, setIsLogout] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [newMessage, setNewMessage] = useState("");
-  const [isMyMsg, setIsMyMsg] = useState(null);
-  const [messages, setMessage] = useState([
-    {
-      userId: location?.state?.userId,
-      msgContent: "",
-      time: new Date(Date.now()),
-    },
-  ]);
+
+  const [messages, setMessages] = useState([]);
+
+  // login agora
+  const loginToAgoraChat = async () => {
+    try {
+      await chatClient.current.open({
+        user: location?.state?.userId,
+        accessToken: location?.state?.appKey,
+      });
+    } catch (error) {
+      console.error("Login failed:", error);
+    }
+  };
+
+  // Logs out.
+  const handleLogout = () => {
+    chatClient.current.close();
+    setIsLoggedIn(false);
+    setIsLogout(true);
+    if (isLogout) {
+      toast.info("User logged out succesfully", {
+        position: "top-center",
+      });
+      navigate("/login");
+    }
+  };
 
   useEffect(() => {
     // initializes the agora client in web
     chatClient.current = new AgoraChat.connection({
       appKey: appKey,
     });
+
     // on login mode
-    chatClient.current.addEventHandler("connection&message", {
+    chatClient.current.addEventHandler("connectionHandler", {
       // Occurs when the app is connected to Agora Chat.
       onConnected: () => {
         setIsLoggedIn(true);
@@ -44,46 +64,58 @@ const Messages = () => {
       onDisconnected: () => {
         setIsLogout(true);
         setIsLoggedIn(false);
-        if (isLogout) {
-          toast.info("User logged out succesfully", {
-            position: "top-center",
-          });
-        }
       },
       onTextMessage: (message) => {
         const isMe = message.from === chatClient.current.user;
-        setIsMyMsg(isMe);
+
+        // ✅ Only add if it's NOT my message (avoid duplicates)
+        if (!isMe) {
+          const receivedMessage = {
+            id: message.id,
+            userId: message.from,
+            msgContent: message.msg,
+            time: new Date(message.time),
+            isOwn: false,
+            status: "received",
+          };
+
+          setMessages((prev) => [...prev, receivedMessage]);
+        }
       },
-      onError: () => {
-        toast.error("UserId or Token wrong", {
+      onError: (error) => {
+        toast.error(error, {
           position: "top-center",
         });
       },
     });
   }, []);
 
-  useEffect(() => {
-    if (!location?.state?.accessToken) {
-      navigate("/login");
-    }
-  }, []);
-
   // submit message
   const handleSubmitMessage = async () => {
     if (newMessage.trim()) {
+      const sendMessage = {
+        id: Date.now(),
+        userId: location?.state?.userId,
+        msgContent: newMessage,
+        time: new Date(Date.now()) - 3600000,
+        isOwn: true,
+      };
+
       try {
         if (isLoggedIn) {
           const msgOptions = {
             chatType: "singleChat",
             type: "txt",
             to: "Shahnewaz",
-            msg: messages.msgContent,
+            msg: newMessage,
           };
           let msg = AgoraChat.message.create(msgOptions);
 
           await chatClient.current.send(msg);
-          setMessage((prevMessage) => [...prevMessage, messages]);
-          setMessage("");
+          setMessages((prevMessage) => [...prevMessage, sendMessage]);
+          console.log(sendMessage);
+
+          setNewMessage("");
         }
       } catch (error) {
         toast.error(`Message send failed: ${error.message}`, {
@@ -97,10 +129,23 @@ const Messages = () => {
     }
   };
 
+  useEffect(() => {
+    if (!location?.state?.appKey) {
+      navigate("/login");
+    }
+  }, []);
+
+  //
+  useEffect(() => {
+    if (location?.state?.appKey && location?.state?.userId) {
+      loginToAgoraChat();
+    }
+  }, []);
+
   return (
     <>
       <div className="flex h-screen bg-gradient-to-bl from-green-900 via-purple-950 to-green-900 ">
-        <div className="sidebar overflow-y-auto border-r border-neutral-500 w-48 lg:w-80 bg-white/10 backdrop-blur-2xl">
+        <div className="sidebar overflow-y-auto border-r flex  flex-col border-neutral-500 w-48 lg:w-80 bg-white/10 backdrop-blur-2xl">
           <div className="sidebar-header  text-white border-b border-neutral-500 p-5">
             <h1 className="text-2xl font-semibold">Agora Chat</h1>
             <p className="text-[13px] py-2 text-green-400 font-semibold">
@@ -118,6 +163,11 @@ const Messages = () => {
           <div className="sidebar-users-list mx-6 text-white">
             <h1>Siddique AHmed</h1>
             <h1>Siddique AHmed</h1>
+          </div>
+          <div className="sidebar-settings flex flex-1 flex-col-reverse mb-10 mx-5 cursor-pointer">
+            <span onClick={handleLogout}>
+              <IoLogOutOutline size={30} color="white" />
+            </span>
           </div>
         </div>
         <div className="main-chat-area flex flex-col flex-1">
@@ -148,12 +198,15 @@ const Messages = () => {
               </span>
             </div>
           </div>
-          <div className="chat-area flex text-white flex-1 flex-col overflow-y-auto m-5">
+
+          {/* chat area */}
+          <div className=" flex-col-reverse chat-area flex text-white flex-1 overflow-y-auto m-5">
             {messages.map((item, index) => (
-              <div key={index}>
-                <h1>{item.msgContent}</h1>
-                <p>{isMyMsg ? "You" : "Others"}</p>
-              </div>
+              <>
+                <div key={index}>
+                  <h1>{item.msgContent}</h1>
+                </div>
+              </>
             ))}
           </div>
           <div className="chat-input flex justify-between items-center gap-3 border-t border-neutral-500 bg-white/10 backdrop-blur-2xl p-5 relative">

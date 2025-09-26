@@ -24,6 +24,26 @@ const Login = () => {
     }
   };
 
+  useEffect(() => {
+    // initializes the agora client in web
+    chatClient.current = new AgoraChat.connection({
+      appKey: appKey,
+    });
+    // on login mode
+    chatClient.current.addEventHandler("connectionHandler", {
+      // Occurs when the app is connected to Agora Chat.
+      onConnected: () => {
+        setIsLoggedIn(true);
+      },
+
+      onError: () => {
+        toast.error("UserId or Token wrong", {
+          position: "top-center",
+        });
+      },
+    });
+  }, []);
+
   // login check
   const handleSubmit = () => {
     if (isLoggedIn) {
@@ -32,9 +52,8 @@ const Login = () => {
       });
       navigate("/messages", {
         state: {
-          accessToken: token,
-          isLoggedIn,
           userId,
+          appKey,
         },
       });
     }
@@ -51,8 +70,8 @@ const Login = () => {
       onConnected: () => {
         setIsLoggedIn(true);
       },
-      onError: () => {
-        toast.error("UserId or Token wrong", {
+      onError: (error) => {
+        toast.error(error, {
           position: "top-center",
         });
       },
