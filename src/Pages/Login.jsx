@@ -13,10 +13,22 @@ const Login = () => {
 
   const handleLogin = () => {
     if (userId && token) {
-      chatClient.current.open({
-        user: userId,
-        accessToken: token,
-      });
+      chatClient.current
+        .open({
+          user: userId,
+          accessToken: token,
+        })
+        .then(() => {
+          // Auth success
+          setIsLoggedIn(true);
+        })
+        .catch((error) => {
+          // Auth failed
+          setIsLoggedIn(false); // ✅ খুব important
+          toast.error("Login failed: " + error.message, {
+            position: "top-center",
+          });
+        });
     } else {
       toast.error("UserId & Token need", {
         position: "top-center",
@@ -29,6 +41,7 @@ const Login = () => {
     chatClient.current = new AgoraChat.connection({
       appKey: appKey,
     });
+
     // on login mode
     chatClient.current.addEventHandler("connectionHandler", {
       // Occurs when the app is connected to Agora Chat.
@@ -37,7 +50,8 @@ const Login = () => {
       },
 
       onError: () => {
-        toast.error("UserId or Token wrong", {
+        setIsLoggedIn(false); // ✅ Error হলে reset করে দাও
+        toast.error("Token or UserId wrong", {
           position: "top-center",
         });
       },
@@ -59,24 +73,6 @@ const Login = () => {
     }
     return;
   };
-
-  useEffect(() => {
-    // initializes the agora client in web
-    chatClient.current = new AgoraChat.connection({
-      appKey: appKey,
-    });
-    // on login mode
-    chatClient.current.addEventHandler("connectionHandler", {
-      onConnected: () => {
-        setIsLoggedIn(true);
-      },
-      onError: (error) => {
-        toast.error(error, {
-          position: "top-center",
-        });
-      },
-    });
-  }, []);
 
   useEffect(() => {
     handleSubmit();

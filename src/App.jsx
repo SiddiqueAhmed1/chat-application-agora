@@ -81,7 +81,6 @@ function App() {
     chatClient.current = new AgoraChat.connection({
       appKey: appKey,
     });
-
     // Adds the event handler.
     chatClient.current.addEventHandler("connection&message", {
       // Occurs when the app is connected to Agora Chat.

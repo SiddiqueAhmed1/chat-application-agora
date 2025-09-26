@@ -21,7 +21,7 @@ const Messages = () => {
   const [isLogout, setIsLogout] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [newMessage, setNewMessage] = useState("");
-
+  const reciepent = "Shahnewaz";
   const [messages, setMessages] = useState([]);
 
   // login agora
@@ -29,72 +29,28 @@ const Messages = () => {
     try {
       await chatClient.current.open({
         user: location?.state?.userId,
-        accessToken: location?.state?.appKey,
+        accessToken: appKey,
       });
     } catch (error) {
       console.error("Login failed:", error);
     }
   };
 
+  useEffect(() => {
+    console.log("eida time check", new Date(Date.now()) - 3600000);
+  }, []);
+
   // Logs out.
   const handleLogout = () => {
     chatClient.current.close();
     setIsLoggedIn(false);
     setIsLogout(true);
-    if (isLogout) {
-      toast.info("User logged out succesfully", {
-        position: "top-center",
-      });
-      navigate("/login");
-    }
   };
-
-  useEffect(() => {
-    // initializes the agora client in web
-    chatClient.current = new AgoraChat.connection({
-      appKey: appKey,
-    });
-
-    // on login mode
-    chatClient.current.addEventHandler("connectionHandler", {
-      // Occurs when the app is connected to Agora Chat.
-      onConnected: () => {
-        setIsLoggedIn(true);
-      },
-      onDisconnected: () => {
-        setIsLogout(true);
-        setIsLoggedIn(false);
-      },
-      onTextMessage: (message) => {
-        const isMe = message.from === chatClient.current.user;
-
-        // ✅ Only add if it's NOT my message (avoid duplicates)
-        if (!isMe) {
-          const receivedMessage = {
-            id: message.id,
-            userId: message.from,
-            msgContent: message.msg,
-            time: new Date(message.time),
-            isOwn: false,
-            status: "received",
-          };
-
-          setMessages((prev) => [...prev, receivedMessage]);
-        }
-      },
-      onError: (error) => {
-        toast.error(error, {
-          position: "top-center",
-        });
-      },
-    });
-  }, []);
 
   // submit message
   const handleSubmitMessage = async () => {
     if (newMessage.trim()) {
       const sendMessage = {
-        id: Date.now(),
         userId: location?.state?.userId,
         msgContent: newMessage,
         time: new Date(Date.now()) - 3600000,
@@ -106,7 +62,7 @@ const Messages = () => {
           const msgOptions = {
             chatType: "singleChat",
             type: "txt",
-            to: "Shahnewaz",
+            to: reciepent,
             msg: newMessage,
           };
           let msg = AgoraChat.message.create(msgOptions);
@@ -130,6 +86,49 @@ const Messages = () => {
   };
 
   useEffect(() => {
+    // initializes the agora client in web
+    chatClient.current = new AgoraChat.connection({
+      appKey: appKey,
+    });
+
+    // on login mode
+    chatClient.current.addEventHandler("connectionHandler", {
+      // Occurs when the app is connected to Agora Chat.
+      onConnected: () => {
+        setIsLoggedIn(true);
+      },
+      onDisconnected: () => {
+        if (isLogout) {
+          toast.info("User logged out succesfully", {
+            position: "top-center",
+          });
+          navigate("/login");
+        }
+      },
+      onTextMessage: (message) => {
+        const isMe = message.from === chatClient.current.user;
+
+        if (!isMe) {
+          const receivedMessage = {
+            userId: message.from,
+            msgContent: message.msg,
+            time: new Date(message.time),
+            isOwn: false,
+          };
+
+          console.log(isMe, receivedMessage);
+          setMessages((prev) => [...prev, receivedMessage]);
+        }
+      },
+      onError: (error) => {
+        toast.error(error, {
+          position: "top-center",
+        });
+      },
+    });
+  }, []);
+
+  useEffect(() => {
     if (!location?.state?.appKey) {
       navigate("/login");
     }
@@ -137,7 +136,7 @@ const Messages = () => {
 
   //
   useEffect(() => {
-    if (location?.state?.appKey && location?.state?.userId) {
+    if (location?.state?.userId) {
       loginToAgoraChat();
     }
   }, []);
@@ -164,8 +163,8 @@ const Messages = () => {
             <h1>Siddique AHmed</h1>
             <h1>Siddique AHmed</h1>
           </div>
-          <div className="sidebar-settings flex flex-1 flex-col-reverse mb-10 mx-5 cursor-pointer">
-            <span onClick={handleLogout}>
+          <div className="sidebar-settings flex flex-1 flex-col-reverse mb-10 mx-5  ">
+            <span onClick={handleLogout} className="cursor-pointer">
               <IoLogOutOutline size={30} color="white" />
             </span>
           </div>
@@ -205,6 +204,7 @@ const Messages = () => {
               <>
                 <div key={index}>
                   <h1>{item.msgContent}</h1>
+                  <p>{item.time}</p>
                 </div>
               </>
             ))}
