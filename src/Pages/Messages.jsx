@@ -25,12 +25,14 @@ const Messages = () => {
   const [messages, setMessages] = useState([]);
 
   // login agora
-  const loginToAgoraChat = async () => {
+  const loginToAgoraChat = () => {
     try {
-      await chatClient.current.open({
-        user: location?.state?.userId,
-        accessToken: appKey,
-      });
+      if (location?.state?.userId) {
+        chatClient.current.open({
+          user: location?.state?.userId,
+          accessToken: location?.state?.token,
+        });
+      }
     } catch (error) {
       console.error("Login failed:", error);
     }
@@ -38,6 +40,7 @@ const Messages = () => {
 
   useEffect(() => {
     console.log("eida time check", new Date(Date.now()) - 3600000);
+    console.log(loginToAgoraChat());
   }, []);
 
   // Logs out.
@@ -98,6 +101,7 @@ const Messages = () => {
         setIsLoggedIn(true);
       },
       onDisconnected: () => {
+        setIsLogout(true);
         if (isLogout) {
           toast.info("User logged out succesfully", {
             position: "top-center",
@@ -116,7 +120,6 @@ const Messages = () => {
             isOwn: false,
           };
 
-          console.log(isMe, receivedMessage);
           setMessages((prev) => [...prev, receivedMessage]);
         }
       },
@@ -129,17 +132,13 @@ const Messages = () => {
   }, []);
 
   useEffect(() => {
-    if (!location?.state?.appKey) {
-      navigate("/login");
-    }
-  }, []);
-
-  //
-  useEffect(() => {
     if (location?.state?.userId) {
       loginToAgoraChat();
     }
-  }, []);
+    if (!location?.state?.token) {
+      navigate("/login");
+    }
+  });
 
   return (
     <>
@@ -202,9 +201,8 @@ const Messages = () => {
           <div className=" flex-col-reverse chat-area flex text-white flex-1 overflow-y-auto m-5">
             {messages.map((item, index) => (
               <>
-                <div key={index}>
+                <div key={index + 1}>
                   <h1>{item.msgContent}</h1>
-                  <p>{item.time}</p>
                 </div>
               </>
             ))}

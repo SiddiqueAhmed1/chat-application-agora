@@ -1,9 +1,9 @@
 import { useEffect, useState, useRef } from "react";
-import "./App.css";
+
 import AgoraChat from "agora-chat";
 import { toast } from "react-toastify";
 
-function App() {
+function Chat() {
   // Replaces <Your app key> with your app key.
   const appKey = "711398512#1603074";
   const [userId, setUserId] = useState("");
@@ -186,4 +186,4 @@ function App() {
   );
 }
 
-export default App;
+export default Chat;

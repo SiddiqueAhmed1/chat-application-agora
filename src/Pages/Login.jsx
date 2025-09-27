@@ -21,13 +21,6 @@ const Login = () => {
         .then(() => {
           // Auth success
           setIsLoggedIn(true);
-        })
-        .catch((error) => {
-          // Auth failed
-          setIsLoggedIn(false); // ✅ খুব important
-          toast.error("Login failed: " + error.message, {
-            position: "top-center",
-          });
         });
     } else {
       toast.error("UserId & Token need", {
@@ -50,7 +43,7 @@ const Login = () => {
       },
 
       onError: () => {
-        setIsLoggedIn(false); // ✅ Error হলে reset করে দাও
+        setIsLoggedIn(false);
         toast.error("Token or UserId wrong", {
           position: "top-center",
         });
@@ -67,7 +60,7 @@ const Login = () => {
       navigate("/messages", {
         state: {
           userId,
-          appKey,
+          token,
         },
       });
     }
