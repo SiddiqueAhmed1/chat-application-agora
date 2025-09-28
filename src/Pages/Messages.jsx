@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { BsSend } from "react-icons/bs";
 import { FaRegSmile } from "react-icons/fa";
 import { FiLink } from "react-icons/fi";
@@ -14,18 +14,15 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { useAgoraChat } from "../Context/ChatProvider";
 
-// shared connection
-
 const Messages = () => {
+  // shared connection
   const { chatClient } = useAgoraChat();
   const location = useLocation();
   const navigate = useNavigate();
-  const [isLogout, setIsLogout] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [newMessage, setNewMessage] = useState("");
   const reciepent = "Shahnewaz";
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [messages, setMessages] = useState([]);
-  const [isMyMsg, setIsMyMsg] = useState(false);
 
   useEffect(() => {
     if (!location?.state?.userId || !location?.state?.token) {
@@ -34,9 +31,97 @@ const Messages = () => {
       });
 
       navigate("/login");
+    }
+
+    if (!chatClient) {
+      toast.error("Not connect yet", {
+        position: "top-center",
+      });
+      navigate("/login");
       return;
     }
-  }, []);
+
+    // event handler
+    chatClient.addEventHandler("messageHandler", {
+      onConnected: () => {
+        setIsLoggedIn(true);
+        toast.success("Connected to chat server");
+      },
+      onTextMessage: (message) => {
+        const isMyMsg = chatClient.user === message.from;
+
+        if (!isMyMsg) {
+          const recievedMsg = {
+            userId: message.userId,
+            msgContent: message.msg,
+            time: new Date(),
+            isOwn: false,
+          };
+
+          setMessages((prevMessage) => [...prevMessage, recievedMsg]);
+        }
+      },
+      onError: (error) => {
+        toast.error("Error Message:" + error.message, {
+          position: "top-center",
+        });
+      },
+    });
+
+    const loginToAgora = async () => {
+      // Check if already logged in
+      if (chatClient.user) {
+        console.log("Already logged in as:", chatClient.user);
+        setIsLoggedIn(true);
+      } else {
+        // Login if not already logged in
+        await chatClient.open({
+          user: location.state.userId,
+          accessToken: location.state.accessToken,
+        });
+      }
+    };
+
+    return () => {
+      if (chatClient) {
+        chatClient.removeEventHandler("messageHandler");
+      }
+    };
+  }, [chatClient, location?.state, navigate]);
+
+  const handleSendMessage = async () => {
+    if (!newMessage.trim()) {
+      return toast.error("Message field empty", {
+        position: "top-center",
+      });
+    }
+
+    try {
+      const msgOptions = {
+        chatType: "singleChat",
+        type: "txt",
+        to: reciepent,
+        msg: newMessage,
+      };
+
+      const msg = AgoraChat.message.create(msgOptions);
+      await chatClient.send(msg);
+
+      // msg add to UI
+      const sendMessage = {
+        userId: location?.state?.userId,
+        msgContent: newMessage,
+        time: new Date(),
+        isOwn: true,
+      };
+      setMessages((prevMessage) => [...prevMessage, sendMessage]);
+      setNewMessage("");
+    } catch (error) {
+      toast.error(error.message, {
+        position: "top-center",
+      });
+    }
+  };
 
   return (
     <>
@@ -100,7 +185,6 @@ const Messages = () => {
             {messages.map((item, index) => (
               <>
                 <div key={index + 1}>
-                  {isMyMsg ? <p>Me</p> : <p>Others</p>}
                   <h1>{item.msgContent}</h1>
                 </div>
               </>
@@ -124,7 +208,7 @@ const Messages = () => {
               <FaRegSmile color="white" size={20} />
             </span>
             <button
-              // onClick={handleSubmitMessage}
+              onClick={handleSendMessage}
               disabled={!newMessage.trim()}
               className={`hover:text-2xl text-lg transition-colors   rounded-md p-2 ${
                 !newMessage.trim()

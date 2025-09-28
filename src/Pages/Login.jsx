@@ -1,5 +1,4 @@
 import { useState } from "react";
-import AgoraChat from "agora-chat";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import { useAgoraChat } from "../Context/ChatProvider";
