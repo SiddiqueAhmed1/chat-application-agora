@@ -1,75 +1,66 @@
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import AgoraChat from "agora-chat";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
+import { useAgoraChat } from "../Context/ChatProvider";
 
 const Login = () => {
-  const appKey = "711398512#1603074";
   const [userId, setUserId] = useState("");
   const [token, setToken] = useState("");
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const chatClient = useRef(null);
   const navigate = useNavigate();
+  const { chatClient, isInitialized } = useAgoraChat();
 
-  const handleLogin = () => {
-    if (userId && token) {
-      chatClient.current
-        .open({
-          user: userId,
-          accessToken: token,
-        })
-        .then(() => {
-          // Auth success
-          setIsLoggedIn(true);
-        });
-    } else {
-      toast.error("UserId & Token need", {
+  const handleLogin = async () => {
+    if (!userId && !token) {
+      return toast.error("UserId or Token need", {
         position: "top-center",
       });
     }
-  };
 
-  useEffect(() => {
-    // initializes the agora client in web
-    chatClient.current = new AgoraChat.connection({
-      appKey: appKey,
-    });
-
-    // on login mode
-    chatClient.current.addEventHandler("connectionHandler", {
-      // Occurs when the app is connected to Agora Chat.
-      onConnected: () => {
-        setIsLoggedIn(true);
-      },
-
-      onError: () => {
-        setIsLoggedIn(false);
-        toast.error("Token or UserId wrong", {
-          position: "top-center",
-        });
-      },
-    });
-  }, []);
-
-  // login check
-  const handleSubmit = () => {
-    if (isLoggedIn) {
-      toast.success("User Logged in succesfully", {
+    if (!chatClient && !isInitialized) {
+      return toast.error("Chatclient not connected to agora", {
         position: "top-center",
       });
-      navigate("/messages", {
-        state: {
-          userId,
-          token,
+    }
+
+    try {
+      // connection event handlers
+      chatClient.addEventHandler("loginHandler", {
+        onConnected: () => {
+          setIsLoggedIn(true);
+          toast.success("Login Succesfull", {
+            position: "top-center",
+          });
+          navigate("/messages", {
+            state: {
+              userId,
+              token,
+              isLoggedIn,
+            },
+          });
+          chatClient.removeEventHandler("loginHandler");
+        },
+        onError: () => {
+          setIsLoggedIn(false);
+          toast.error("Login Failed", {
+            position: "top-center",
+          });
+          chatClient.removeEventHandler("loginHandler");
         },
       });
-    }
-    return;
-  };
 
-  useEffect(() => {
-    handleSubmit();
-  }, [isLoggedIn]);
+      await chatClient.open({
+        user: userId,
+        accessToken: token,
+      });
+    } catch (error) {
+      setIsLoggedIn(false);
+      toast.error(error.message, {
+        position: "top-center",
+      });
+    }
+  };
 
   return (
     <>

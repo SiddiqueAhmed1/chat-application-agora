@@ -12,133 +12,31 @@ import {
 } from "react-icons/io5";
 import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
+import { useAgoraChat } from "../Context/ChatProvider";
+
+// shared connection
 
 const Messages = () => {
-  const appKey = "711398512#1603074";
+  const { chatClient } = useAgoraChat();
   const location = useLocation();
   const navigate = useNavigate();
-  const chatClient = useRef(null);
   const [isLogout, setIsLogout] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [newMessage, setNewMessage] = useState("");
   const reciepent = "Shahnewaz";
   const [messages, setMessages] = useState([]);
-
-  // login agora
-  const loginToAgoraChat = () => {
-    try {
-      if (location?.state?.userId) {
-        chatClient.current.open({
-          user: location?.state?.userId,
-          accessToken: location?.state?.token,
-        });
-      }
-    } catch (error) {
-      console.error("Login failed:", error);
-    }
-  };
+  const [isMyMsg, setIsMyMsg] = useState(false);
 
   useEffect(() => {
-    console.log("eida time check", new Date(Date.now()) - 3600000);
-    console.log(loginToAgoraChat());
-  }, []);
-
-  // Logs out.
-  const handleLogout = () => {
-    chatClient.current.close();
-    setIsLoggedIn(false);
-    setIsLogout(true);
-  };
-
-  // submit message
-  const handleSubmitMessage = async () => {
-    if (newMessage.trim()) {
-      const sendMessage = {
-        userId: location?.state?.userId,
-        msgContent: newMessage,
-        time: new Date(Date.now()) - 3600000,
-        isOwn: true,
-      };
-
-      try {
-        if (isLoggedIn) {
-          const msgOptions = {
-            chatType: "singleChat",
-            type: "txt",
-            to: reciepent,
-            msg: newMessage,
-          };
-          let msg = AgoraChat.message.create(msgOptions);
-
-          await chatClient.current.send(msg);
-          setMessages((prevMessage) => [...prevMessage, sendMessage]);
-          console.log(sendMessage);
-
-          setNewMessage("");
-        }
-      } catch (error) {
-        toast.error(`Message send failed: ${error.message}`, {
-          position: "top-center",
-        });
-      }
-    } else {
-      toast.warning("Please enter message content", {
+    if (!location?.state?.userId || !location?.state?.token) {
+      toast.error("not logged in", {
         position: "top-center",
       });
-    }
-  };
 
-  useEffect(() => {
-    // initializes the agora client in web
-    chatClient.current = new AgoraChat.connection({
-      appKey: appKey,
-    });
-
-    // on login mode
-    chatClient.current.addEventHandler("connectionHandler", {
-      // Occurs when the app is connected to Agora Chat.
-      onConnected: () => {
-        setIsLoggedIn(true);
-      },
-      onDisconnected: () => {
-        setIsLogout(true);
-        if (isLogout) {
-          toast.info("User logged out succesfully", {
-            position: "top-center",
-          });
-          navigate("/login");
-        }
-      },
-      onTextMessage: (message) => {
-        const isMe = message.from === chatClient.current.user;
-
-        if (!isMe) {
-          const receivedMessage = {
-            userId: message.from,
-            msgContent: message.msg,
-            time: new Date(message.time),
-            isOwn: false,
-          };
-
-          setMessages((prev) => [...prev, receivedMessage]);
-        }
-      },
-      onError: (error) => {
-        toast.error(error, {
-          position: "top-center",
-        });
-      },
-    });
-  }, []);
-
-  useEffect(() => {
-    if (location?.state?.userId) {
-      loginToAgoraChat();
-    }
-    if (!location?.state?.token) {
       navigate("/login");
+      return;
     }
-  });
+  }, []);
 
   return (
     <>
@@ -163,7 +61,7 @@ const Messages = () => {
             <h1>Siddique AHmed</h1>
           </div>
           <div className="sidebar-settings flex flex-1 flex-col-reverse mb-10 mx-5  ">
-            <span onClick={handleLogout} className="cursor-pointer">
+            <span className="cursor-pointer">
               <IoLogOutOutline size={30} color="white" />
             </span>
           </div>
@@ -202,6 +100,7 @@ const Messages = () => {
             {messages.map((item, index) => (
               <>
                 <div key={index + 1}>
+                  {isMyMsg ? <p>Me</p> : <p>Others</p>}
                   <h1>{item.msgContent}</h1>
                 </div>
               </>
@@ -225,7 +124,7 @@ const Messages = () => {
               <FaRegSmile color="white" size={20} />
             </span>
             <button
-              onClick={handleSubmitMessage}
+              // onClick={handleSubmitMessage}
               disabled={!newMessage.trim()}
               className={`hover:text-2xl text-lg transition-colors   rounded-md p-2 ${
                 !newMessage.trim()

@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-
+import "../App.css";
 import AgoraChat from "agora-chat";
 import { toast } from "react-toastify";
 

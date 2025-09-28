@@ -1,13 +1,13 @@
 import { createBrowserRouter } from "react-router-dom";
-import App from "../App";
 import Login from "../Pages/Login";
 import Messages from "../Pages/Messages";
 import Chat from "../Pages/Chat";
+import Home from "../Pages/Home";
 
 const browserRouter = createBrowserRouter([
   {
     path: "/",
-    element: <App />,
+    element: <Home />,
   },
   {
     path: "/chat",
