@@ -26,18 +26,17 @@ const Messages = () => {
   const [isRecieved, setIsRecieved] = useState(false);
   const [isDelivered, setIsDelivered] = useState(false);
   const [isSeen, setIsSeen] = useState(false);
-  const [userList, setUserList] = useState([]);
 
-  // Conversation list
-  const getConversations = async () => {
-    try {
-      const res = await chatClient.getServerConversations();
-      console.log("Conversations:", res);
-      setUserList(() => [res.data.conversations.conversationId]);
-    } catch (error) {
-      console.error("Failed:", error);
-    }
-  };
+  // // Conversation list
+  // const getConversations = async () => {
+  //   try {
+  //     const res = await chatClient.getServerConversations();
+  //     console.log("Conversations:", res);
+  //     setUserList(() => [res.data.conversationId]);
+  //   } catch (error) {
+  //     console.error("Failed:", error);
+  //   }
+  // };
 
   useEffect(() => {
     if (!location?.state?.userId || !location?.state?.token) {
@@ -56,9 +55,6 @@ const Messages = () => {
       navigate("/login");
       return;
     }
-
-    getConversations();
-    console.log("user der list", userList[0]);
 
     // event handler
     chatClient.addEventHandler("messageHandler", {
@@ -106,8 +102,6 @@ const Messages = () => {
     };
   }, [chatClient, location?.state, navigate]);
 
-  useEffect(() => {}, []);
-
   const loginToAgora = async () => {
     // Check if already logged in
     if (chatClient.user) {
@@ -133,7 +127,7 @@ const Messages = () => {
       const msgOptions = {
         chatType: "singleChat",
         type: "txt",
-        to: reciepent,
+        to: location?.state?.userId === reciepent ? "Siddique" : "Shahnewaz",
         msg: newMessage,
       };
 
@@ -175,14 +169,9 @@ const Messages = () => {
             />
           </div>
           <div className="sidebar-users-list mx-6 text-white">
-            {userList.map((item, index) => {
-              <>
-                <div key={index}>
-                  <h1>{item}</h1>
-                </div>
-              </>;
-            })}
+            <h1>Siddique</h1>
           </div>
+
           <div className="sidebar-settings flex flex-1 flex-col-reverse mb-10 mx-5  ">
             <span className="cursor-pointer">
               <IoLogOutOutline size={30} color="white" />
