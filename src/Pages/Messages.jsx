@@ -23,6 +23,21 @@ const Messages = () => {
   const reciepent = "Shahnewaz";
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [messages, setMessages] = useState([]);
+  const [isRecieved, setIsRecieved] = useState(false);
+  const [isDelivered, setIsDelivered] = useState(false);
+  const [isSeen, setIsSeen] = useState(false);
+  const [userList, setUserList] = useState([]);
+
+  // Conversation list
+  const getConversations = async () => {
+    try {
+      const res = await chatClient.getServerConversations();
+      console.log("Conversations:", res);
+      setUserList(() => [res.data.conversations.conversationId]);
+    } catch (error) {
+      console.error("Failed:", error);
+    }
+  };
 
   useEffect(() => {
     if (!location?.state?.userId || !location?.state?.token) {
@@ -41,6 +56,9 @@ const Messages = () => {
       navigate("/login");
       return;
     }
+
+    getConversations();
+    console.log("user der list", userList[0]);
 
     // event handler
     chatClient.addEventHandler("messageHandler", {
@@ -63,6 +81,15 @@ const Messages = () => {
           setMessages((prevMessage) => [...prevMessage, recievedMsg]);
         }
       },
+      onReceivedMessage: () => {
+        setIsRecieved(true);
+      },
+      onDeliveredMessage: () => {
+        setIsDelivered(true);
+      },
+      onReadMessage: () => {
+        setIsSeen(true);
+      },
       onError: (error) => {
         toast.error("Error Message:" + error.message, {
           position: "top-center",
@@ -78,6 +105,8 @@ const Messages = () => {
       }
     };
   }, [chatClient, location?.state, navigate]);
+
+  useEffect(() => {}, []);
 
   const loginToAgora = async () => {
     // Check if already logged in
@@ -146,8 +175,13 @@ const Messages = () => {
             />
           </div>
           <div className="sidebar-users-list mx-6 text-white">
-            <h1>Siddique AHmed</h1>
-            <h1>Siddique AHmed</h1>
+            {userList.map((item, index) => {
+              <>
+                <div key={index}>
+                  <h1>{item}</h1>
+                </div>
+              </>;
+            })}
           </div>
           <div className="sidebar-settings flex flex-1 flex-col-reverse mb-10 mx-5  ">
             <span className="cursor-pointer">
@@ -185,12 +219,12 @@ const Messages = () => {
           </div>
 
           {/* chat area */}
-          <div className="  text-white flex-1 overflow-y-auto m-5">
+          <div className="  text-white flex-1 overflow-y-auto ">
             {messages.map((item, index) => (
               <>
                 <div
                   key={index + 1}
-                  className={` ${item.isOwn ? "text-right" : "text-left"} mx-2`}
+                  className={` ${item.isOwn ? "text-right" : "text-left"} m-5`}
                 >
                   <p className="  text-xs text-red-300 font-semibold mb-2 px-4">
                     {item.isOwn ? "You" : item.userId}
@@ -198,12 +232,13 @@ const Messages = () => {
                   <div
                     className={` ${
                       item.isOwn
-                        ? "bg-gradient-to-r from-green-700 to-blue-700"
-                        : " bg-white/20 text-neutral-100 border border-neutral-500 backdrop-blur-3xl"
+                        ? "bg-gradient-to-r from-blue-600/80 to-green-700"
+                        : "bg-gradient-to-r from-white/10 to-white/20 text-neutral-200 border border-neutral-500 backdrop-blur-3xl"
                     }  inline-block max-w-96  px-4 py-2 rounded-2xl mb-2`}
                   >
                     <h1 className=" text-left">{item.msgContent}</h1>
                   </div>
+                  <p>{isSeen ? "seen" : ""}</p>
                 </div>
               </>
             ))}
