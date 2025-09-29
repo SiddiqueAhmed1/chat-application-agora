@@ -26,11 +26,12 @@ const Messages = () => {
 
   useEffect(() => {
     if (!location?.state?.userId || !location?.state?.token) {
-      toast.error("not logged in", {
+      toast.error("Not logged in", {
         position: "top-center",
       });
 
       navigate("/login");
+      return;
     }
 
     if (!chatClient) {
@@ -52,11 +53,12 @@ const Messages = () => {
 
         if (!isMyMsg) {
           const recievedMsg = {
-            userId: message.userId,
+            userId: message.from,
             msgContent: message.msg,
             time: new Date(),
             isOwn: false,
           };
+          console.log("Message checking", message);
 
           setMessages((prevMessage) => [...prevMessage, recievedMsg]);
         }
@@ -68,19 +70,7 @@ const Messages = () => {
       },
     });
 
-    const loginToAgora = async () => {
-      // Check if already logged in
-      if (chatClient.user) {
-        console.log("Already logged in as:", chatClient.user);
-        setIsLoggedIn(true);
-      } else {
-        // Login if not already logged in
-        await chatClient.open({
-          user: location.state.userId,
-          accessToken: location.state.accessToken,
-        });
-      }
-    };
+    loginToAgora();
 
     return () => {
       if (chatClient) {
@@ -88,6 +78,20 @@ const Messages = () => {
       }
     };
   }, [chatClient, location?.state, navigate]);
+
+  const loginToAgora = async () => {
+    // Check if already logged in
+    if (chatClient.user) {
+      console.log("Already logged in as:", chatClient.user);
+      setIsLoggedIn(true);
+    } else {
+      // Login if not already logged in
+      await chatClient.open({
+        user: location.state.userId,
+        accessToken: location.state.accessToken,
+      });
+    }
+  };
 
   const handleSendMessage = async () => {
     if (!newMessage.trim()) {
@@ -181,11 +185,25 @@ const Messages = () => {
           </div>
 
           {/* chat area */}
-          <div className=" flex-col-reverse chat-area flex text-white flex-1 overflow-y-auto m-5">
+          <div className="  text-white flex-1 overflow-y-auto m-5">
             {messages.map((item, index) => (
               <>
-                <div key={index + 1}>
-                  <h1>{item.msgContent}</h1>
+                <div
+                  key={index + 1}
+                  className={` ${item.isOwn ? "text-right" : "text-left"} mx-2`}
+                >
+                  <p className="  text-xs text-red-300 font-semibold mb-2 px-4">
+                    {item.isOwn ? "You" : item.userId}
+                  </p>
+                  <div
+                    className={` ${
+                      item.isOwn
+                        ? "bg-gradient-to-r from-green-700 to-blue-700"
+                        : " bg-white/20 text-neutral-100 border border-neutral-500 backdrop-blur-3xl"
+                    }  inline-block max-w-96  px-4 py-2 rounded-2xl mb-2`}
+                  >
+                    <h1 className=" text-left">{item.msgContent}</h1>
+                  </div>
                 </div>
               </>
             ))}
