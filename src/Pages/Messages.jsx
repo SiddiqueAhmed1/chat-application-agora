@@ -17,26 +17,13 @@ import { useAgoraChat } from "../Context/ChatProvider";
 const Messages = () => {
   // shared connection
   const { chatClient } = useAgoraChat();
+
   const location = useLocation();
   const navigate = useNavigate();
   const [newMessage, setNewMessage] = useState("");
   const reciepent = "Shahnewaz";
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [messages, setMessages] = useState([]);
-  const [isRecieved, setIsRecieved] = useState(false);
-  const [isDelivered, setIsDelivered] = useState(false);
-  const [isSeen, setIsSeen] = useState(false);
-
-  // // Conversation list
-  // const getConversations = async () => {
-  //   try {
-  //     const res = await chatClient.getServerConversations();
-  //     console.log("Conversations:", res);
-  //     setUserList(() => [res.data.conversationId]);
-  //   } catch (error) {
-  //     console.error("Failed:", error);
-  //   }
-  // };
 
   useEffect(() => {
     if (!location?.state?.userId || !location?.state?.token) {
@@ -77,21 +64,15 @@ const Messages = () => {
           setMessages((prevMessage) => [...prevMessage, recievedMsg]);
         }
       },
-      onReceivedMessage: () => {
-        setIsRecieved(true);
-      },
-      onDeliveredMessage: () => {
-        setIsDelivered(true);
-      },
-      onReadMessage: () => {
-        setIsSeen(true);
-      },
+
       onError: (error) => {
         toast.error("Error Message:" + error.message, {
           position: "top-center",
         });
       },
     });
+
+    // message handler
 
     loginToAgora();
 
@@ -123,30 +104,53 @@ const Messages = () => {
       });
     }
 
+    const tempId = Date.now();
+    const sendingMessage = {
+      id: tempId,
+      userId: location?.state?.userId,
+      msgContent: newMessage,
+      time: new Date(),
+      isOwn: true,
+      status: "sending",
+    };
+
+    setMessages((prevMessage) => [...prevMessage, sendingMessage]);
+    const messageText = newMessage;
+    setNewMessage("");
+
     try {
       const msgOptions = {
         chatType: "singleChat",
         type: "txt",
         to: location?.state?.userId === reciepent ? "Siddique" : "Shahnewaz",
-        msg: newMessage,
+        msg: messageText,
       };
 
       const msg = AgoraChat.message.create(msgOptions);
       await chatClient.send(msg);
 
-      // msg add to UI
-      const sendMessage = {
-        userId: location?.state?.userId,
-        msgContent: newMessage,
-        time: new Date(),
-        isOwn: true,
-      };
-      setMessages((prevMessage) => [...prevMessage, sendMessage]);
+      setMessages((prevMessage) =>
+        prevMessage.map((m) =>
+          m.id === tempId ? { ...m, id: msg.id, status: "sent" } : m
+        )
+      );
       setNewMessage("");
     } catch (error) {
       toast.error(error.message, {
         position: "top-center",
       });
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      if (chatClient) {
+        await chatClient.close();
+      }
+      toast.success("Logged out");
+      navigate("/login");
+    } catch (error) {
+      console.error("Logout error:", error);
     }
   };
 
@@ -173,7 +177,7 @@ const Messages = () => {
           </div>
 
           <div className="sidebar-settings flex flex-1 flex-col-reverse mb-10 mx-5  ">
-            <span className="cursor-pointer">
+            <span onClick={handleLogout} className="cursor-pointer">
               <IoLogOutOutline size={30} color="white" />
             </span>
           </div>
@@ -227,7 +231,6 @@ const Messages = () => {
                   >
                     <h1 className=" text-left">{item.msgContent}</h1>
                   </div>
-                  <p>{isSeen ? "seen" : ""}</p>
                 </div>
               </>
             ))}
