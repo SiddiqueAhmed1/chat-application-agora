@@ -64,7 +64,7 @@ const Login = () => {
   return (
     <>
       <section className=" h-[700px] flex  items-center bg-neutral-100 flex-col justify-evenly text-green-700 font-semibold font-sans ">
-        <div className="card mx-auto ">
+        <div className="card mx-auto w-[500px]">
           <h1 className="text-3xl text-center mb-6 font-semibold  pb-3 ">
             Agora Chat
           </h1>
