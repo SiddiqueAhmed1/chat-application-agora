@@ -94,6 +94,15 @@ const Login = () => {
             <button onClick={handleLogin} className="button my-3 text-white">
               Login
             </button>
+            <p className="text-center text-sm">
+              Don't have account?{" "}
+              <span
+                onClick={() => navigate("/register")}
+                className="text-blue-600 cursor-pointer hover:underline"
+              >
+                Register
+              </span>
+            </p>
           </div>
         </div>
         <div>

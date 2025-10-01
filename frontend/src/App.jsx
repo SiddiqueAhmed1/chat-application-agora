@@ -6,7 +6,7 @@ const App = () => {
   return (
     <>
       <RouterProvider router={browserRouter}></RouterProvider>
-      <ToastContainer />
+      <ToastContainer theme="dark" />
     </>
   );
 };

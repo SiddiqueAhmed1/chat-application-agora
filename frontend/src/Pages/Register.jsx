@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import AgoraChat from "agora-chat";
+import agoraLogo from "../../public/agora-logo.png";
 
 const Register = () => {
   const [email, setEmail] = useState("");
@@ -55,8 +56,11 @@ const Register = () => {
   };
 
   return (
-    <section className="h-screen flex items-center bg-neutral-100 flex-col pt-36 text-green-700 font-semibold font-sans">
-      <div className="card mx-auto bg-white p-8 rounded-lg shadow-lg w-96">
+    <section className="h-screen flex items-center bg-neutral-100 flex-col pt-16 text-green-700 font-semibold font-sans">
+      <div>
+        <img className="w-24 h-24 object-contain" src={agoraLogo} alt="" />
+      </div>
+      <div className="card mx-auto bg-white p-8 rounded-lg shadow-lg w-[500px]">
         <h1 className="text-3xl text-center mb-6 font-semibold pb-3">
           Create Account
         </h1>
