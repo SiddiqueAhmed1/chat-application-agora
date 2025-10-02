@@ -78,4 +78,9 @@ const userRegisterController = async (req, res) => {
   }
 };
 
+export const userLogin = () => {
+  try {
+  } catch (error) {}
+};
+
 export default userRegisterController;
