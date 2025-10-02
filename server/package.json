@@ -1,9 +1,10 @@
 {
-  "type":"module",
+  "type": "module",
   "scripts": {
     "start": "nodemon server.js"
   },
   "dependencies": {
+    "agora-token": "^2.0.5",
     "axios": "^1.12.2",
     "colors": "^1.4.0",
     "cors": "^2.8.5",

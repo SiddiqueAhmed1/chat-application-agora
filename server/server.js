@@ -1,15 +1,22 @@
 import express from "express";
 import dotenv from "dotenv";
 import color from "colors";
-import router from "./Routing/userRegisterRouter.js";
+import userRouter from "./Routing/userRegisterRouter.js";
+import cors from "cors";
+
+// app initialize
+const app = express();
 
 // config
 dotenv.config();
 const port = process.env.PORT;
 
-const app = express();
+//
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(cors());
 
-app.use(router);
+app.use(userRouter);
 
 // server listen
 app.listen(port, () => {

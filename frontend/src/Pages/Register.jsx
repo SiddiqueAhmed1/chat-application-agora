@@ -2,8 +2,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import AgoraChat from "agora-chat";
 import agoraLogo from "../../public/agora-logo.png";
+import axios from "axios";
 
 const Register = () => {
   const [email, setEmail] = useState("");
@@ -31,25 +31,25 @@ const Register = () => {
     setIsRegistering(true);
 
     try {
-      const response = await fetch("http://localhost:3001/api/register", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email, password }),
-      });
+      const inputData = {
+        email,
+        password,
+      };
 
-      const data = await response.json();
+      const response = await axios.post(
+        `http://localhost:6060/api/register`,
+        inputData
+      );
 
-      if (data.success) {
-        toast.success("Registration successful! Please login.");
+      if (response.data.success) {
+        toast.success(response.data.message);
         navigate("/login");
       } else {
-        toast.error(data.message);
+        toast.error(response.data.message);
       }
     } catch (error) {
       console.error("Registration failed:", error);
-      toast.error("Registration failed. Please try again.");
+      toast.error(error.message);
     } finally {
       setIsRegistering(false);
     }
