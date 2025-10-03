@@ -27,15 +27,10 @@ const Login = () => {
     }
 
     try {
-      const inputData = {
+      const response = await axios.post(`http://localhost:6060/api/login`, {
         email,
         password,
-      };
-
-      const response = await axios.post(
-        `http://localhost:6060/api/login`,
-        inputData
-      );
+      });
 
       const { userId, accessToken } = response.data.data;
       console.log("checking from login page", response);
@@ -67,15 +62,30 @@ const Login = () => {
         },
       });
       await chatClient.open({
-        user: response.data.data.userId,
-        accessToken: response.data.data.accessToken,
+        user: userId,
+        accessToken: accessToken,
       });
     } catch (error) {
+      console.error("Login error:", error);
       setIsLoggedIn(false);
-      toast.error(error.message, {
-        position: "top-center",
-      });
-      console.log("error from login page", error);
+
+      // Handle specific errors
+      if (error.response) {
+        // Backend error
+        toast.error(error.response.data.message || "Login failed", {
+          position: "top-center",
+        });
+      } else if (error.request) {
+        // Network error
+        toast.error("Cannot connect to server", {
+          position: "top-center",
+        });
+      } else {
+        // Other errors
+        toast.error(error.message || "Login failed", {
+          position: "top-center",
+        });
+      }
     }
   };
 

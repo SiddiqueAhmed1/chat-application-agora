@@ -69,6 +69,7 @@ const Register = () => {
             <label className="font-semibold block mb-2" htmlFor="email">
               Email Address
             </label>
+
             <input
               name="email"
               id="email"

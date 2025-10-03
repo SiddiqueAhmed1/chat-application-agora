@@ -98,7 +98,7 @@ export const userLogin = async (req, res) => {
       expirationInSecond
     );
 
-    res.status(400).json({
+    res.status(200).json({
       success: true,
       error: false,
       message: "Login Succesful",
