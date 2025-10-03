@@ -2,15 +2,16 @@ import axios from "axios";
 import getAppToken from "../Utils/getAppToken.js";
 import agoraToken from "agora-token";
 
-const userRegisterController = async (req, res) => {
-  const agora_base_url = process.env.AGORA_BASE_URL;
-  const agora_app = process.env.AGORA_APP;
-  const agora_org = process.env.AGORA_ORG;
-  const ChatTokenBuilder = agoraToken.ChatTokenBuilder;
-  const app_id = process.env.APP_ID;
-  const app_certificate = process.env.APP_CERTIFICATE;
-  const expirationInSecond = 86400;
+// global utility
+const agora_base_url = process.env.AGORA_BASE_URL;
+const agora_app = process.env.AGORA_APP;
+const agora_org = process.env.AGORA_ORG;
+const ChatTokenBuilder = agoraToken.ChatTokenBuilder;
+const app_id = process.env.APP_ID;
+const app_certificate = process.env.APP_CERTIFICATE;
+const expirationInSecond = 86400;
 
+const userRegisterController = async (req, res) => {
   try {
     const { email, password } = req.body;
 
@@ -78,9 +79,39 @@ const userRegisterController = async (req, res) => {
   }
 };
 
-export const userLogin = () => {
+// user login controller
+export const userLogin = async (req, res) => {
   try {
-  } catch (error) {}
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({ message: "All fields are required" });
+    }
+
+    const userName = email.replace(/[@.]/g, "_");
+
+    // generate user token
+    const userToken = ChatTokenBuilder.buildUserToken(
+      app_id,
+      app_certificate,
+      userName,
+      expirationInSecond
+    );
+
+    res.status(400).json({
+      success: true,
+      error: false,
+      message: "Login Succesful",
+      data: {
+        userId: userName,
+        accessToken: userToken,
+      },
+    });
+
+    //login
+  } catch (error) {
+    return res.status(400).json({ message: error.message });
+  }
 };
 
 export default userRegisterController;

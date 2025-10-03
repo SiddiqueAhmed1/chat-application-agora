@@ -56,7 +56,7 @@ const Register = () => {
   };
 
   return (
-    <section className="h-screen flex items-center bg-neutral-100 flex-col pt-16 text-green-700 font-semibold font-sans">
+    <section className="h-screen flex items-center bg-neutral-100 flex-col xl:pt-16 lg:pt-0 text-green-700 font-semibold font-sans">
       <div>
         <img className="w-24 h-24 object-contain" src={agoraLogo} alt="" />
       </div>

@@ -22,11 +22,11 @@ const Messages = () => {
   const navigate = useNavigate();
   const [newMessage, setNewMessage] = useState("");
   const reciepent = "Shahnewaz";
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [setIsLoggedIn] = useState(false);
   const [messages, setMessages] = useState([]);
 
   useEffect(() => {
-    if (!location?.state?.userId || !location?.state?.token) {
+    if (!location?.state?.userId || !location?.state?.accessToken) {
       toast.error("Not logged in", {
         position: "top-center",
       });
@@ -91,8 +91,8 @@ const Messages = () => {
     } else {
       // Login if not already logged in
       await chatClient.open({
-        user: location.state.userId,
-        accessToken: location.state.accessToken,
+        user: location?.state?.userId,
+        accessToken: location?.state?.accessToken,
       });
     }
   };
