@@ -37,11 +37,7 @@ const Login = () => {
         inputData
       );
 
-      await chatClient.open({
-        user: response.data.userId,
-        accessToken: response.data.accessToken,
-      });
-
+      const { userId, accessToken } = response.data.data;
       console.log("checking from login page", response);
 
       // connection event handlers
@@ -53,26 +49,33 @@ const Login = () => {
           });
           navigate("/messages", {
             state: {
-              userId: response.data.userId,
-              accessToken: response.data.accessToken,
-              isLoggedIn,
+              userId,
+              accessToken,
             },
           });
+
           chatClient.removeEventHandler("loginHandler");
         },
-        onError: () => {
+        onError: (error) => {
           setIsLoggedIn(false);
-          toast.error("Login Failed", {
+          toast.error(error.message, {
             position: "top-center",
           });
+          console.log("error taki", error.message);
+
           chatClient.removeEventHandler("loginHandler");
         },
+      });
+      await chatClient.open({
+        user: response.data.data.userId,
+        accessToken: response.data.data.accessToken,
       });
     } catch (error) {
       setIsLoggedIn(false);
       toast.error(error.message, {
         position: "top-center",
       });
+      console.log("error from login page", error);
     }
   };
 

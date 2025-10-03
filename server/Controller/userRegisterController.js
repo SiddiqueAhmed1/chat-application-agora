@@ -110,7 +110,9 @@ export const userLogin = async (req, res) => {
 
     //login
   } catch (error) {
-    return res.status(400).json({ message: error.message });
+    res.status(400).json({ message: error.message });
+    console.log("error from login backend", error);
+    return;
   }
 };
 
