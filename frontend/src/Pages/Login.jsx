@@ -10,6 +10,7 @@ const Login = () => {
   const [password, setPassword] = useState("");
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const navigate = useNavigate();
+  const [isLogging, setIsLogging] = useState(false);
   const { chatClient, isInitialized } = useAgoraChat();
 
   const handleLogin = async () => {
@@ -27,6 +28,7 @@ const Login = () => {
     }
 
     try {
+      setIsLogging(true);
       const response = await axios.post(`http://localhost:6060/api/login`, {
         email,
         password,
@@ -86,6 +88,8 @@ const Login = () => {
           position: "top-center",
         });
       }
+    } finally {
+      setIsLogging(false);
     }
   };
 
@@ -122,8 +126,12 @@ const Login = () => {
               type="text"
               placeholder="password"
             />
-            <button onClick={handleLogin} className="button my-3 text-white">
-              Login
+            <button
+              disabled={isLogging}
+              onClick={handleLogin}
+              className="button my-3 text-white"
+            >
+              {isLogging ? "Login..." : "Login"}
             </button>
             <p className="text-center text-sm">
               Don't have account?{" "}

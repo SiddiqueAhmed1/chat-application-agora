@@ -79,6 +79,29 @@ const userRegisterController = async (req, res) => {
   }
 };
 
+export const getAllUsers = async (req, res) => {
+  const appToken = await getAppToken();
+
+  try {
+    const response = await axios.get(
+      `${agora_base_url}/${agora_org}/${agora_app}/users`,
+      {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${appToken}`,
+        },
+      }
+    );
+    res.status(200).json({
+      message: "All users here",
+      data: response?.data?.entities,
+    });
+  } catch (error) {
+    res.json({ message: error, Checking: error.response?.data });
+    console.error("Get Users Error:", error.response?.data || error.message);
+  }
+};
+
 // user login controller
 export const userLogin = async (req, res) => {
   try {

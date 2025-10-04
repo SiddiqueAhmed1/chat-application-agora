@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { BsSend } from "react-icons/bs";
 import { FaRegSmile } from "react-icons/fa";
 import { FiLink } from "react-icons/fi";
-import { HiOutlineDotsHorizontal } from "react-icons/hi";
+import { HiOutlineDotsHorizontal, HiOutlineUsers } from "react-icons/hi";
 import AgoraChat from "agora-chat";
 import {
   IoCallOutline,
@@ -13,6 +13,8 @@ import {
 import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { useAgoraChat } from "../Context/ChatProvider";
+import axios from "axios";
+import { PiUsers } from "react-icons/pi";
 
 const Messages = () => {
   // shared connection
@@ -24,6 +26,19 @@ const Messages = () => {
   const reciepent = "Shahnewaz";
   const [setIsLoggedIn] = useState(false);
   const [messages, setMessages] = useState([]);
+  const messageEndRef = useRef(null);
+  const [allUsers, setAllUsers] = useState([]);
+
+  const timeFormat = (timeStamp) => {
+    return timeStamp.toLocaleString([], { hour: "2-digit", minute: "2-digit" });
+  };
+
+  const getAllUser = async () => {
+    const userResponse = await axios.get(`http://localhost:6060/api/users`);
+    const user = userResponse?.data?.data;
+    setAllUsers(() => [...user]);
+    console.log("user data", user.username);
+  };
 
   useEffect(() => {
     if (!location?.state?.userId || !location?.state?.accessToken) {
@@ -72,8 +87,7 @@ const Messages = () => {
       },
     });
 
-    // message handler
-
+    getAllUser();
     loginToAgora();
 
     return () => {
@@ -82,6 +96,14 @@ const Messages = () => {
       }
     };
   }, [chatClient, location?.state, navigate]);
+
+  const scrollToMessage = () => {
+    messageEndRef.current.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToMessage();
+  }, [messages]);
 
   const loginToAgora = async () => {
     // Check if already logged in
@@ -173,7 +195,25 @@ const Messages = () => {
             />
           </div>
           <div className="sidebar-users-list mx-6 text-white">
-            <h1>Siddique</h1>
+            <div className="flex gap-2 items-center text-green-400 text-lg mb-2">
+              <span className="font-semibold">
+                <PiUsers />
+              </span>
+              <h1 className="font-semibold">Users</h1>
+            </div>
+
+            {allUsers.map((item, index) => (
+              <>
+                <div key={index + 1}>
+                  <button
+                    onClick={handleUid(item.uuid)}
+                    className="mb-1 cursor-pointer"
+                  >
+                    {index + 1}. {item.username}
+                  </button>
+                </div>
+              </>
+            ))}
           </div>
 
           <div className="sidebar-settings flex flex-1 flex-col-reverse mb-10 mx-5  ">
@@ -219,9 +259,14 @@ const Messages = () => {
                   key={index + 1}
                   className={` ${item.isOwn ? "text-right" : "text-left"} m-5`}
                 >
-                  <p className="  text-xs text-red-300 font-semibold mb-2 px-4">
-                    {item.isOwn ? "You" : item.userId}
-                  </p>
+                  <div>
+                    <p className="text-[14px] text-neutral-300 font-semibold mb-[2px] px-2">
+                      {item.isOwn ? "You" : item.userId}
+                    </p>
+                    <p className="text-[11px] mb-2 text-neutral-400 font-semibold  px-2">
+                      {timeFormat(item.time)}
+                    </p>
+                  </div>
                   <div
                     className={` ${
                       item.isOwn
@@ -234,6 +279,7 @@ const Messages = () => {
                 </div>
               </>
             ))}
+            <div ref={messageEndRef}></div>
           </div>
           <div className="chat-input flex justify-between items-center gap-3 border-t border-neutral-500 bg-white/10 backdrop-blur-2xl p-5 relative">
             <span>
