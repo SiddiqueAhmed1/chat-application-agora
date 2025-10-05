@@ -19,15 +19,14 @@ import { PiUsers } from "react-icons/pi";
 const Messages = () => {
   // shared connection
   const { chatClient } = useAgoraChat();
-
   const location = useLocation();
   const navigate = useNavigate();
   const [newMessage, setNewMessage] = useState("");
-  const reciepent = "Shahnewaz";
   const [setIsLoggedIn] = useState(false);
   const [messages, setMessages] = useState([]);
   const messageEndRef = useRef(null);
   const [allUsers, setAllUsers] = useState([]);
+  const [selectedUser, setSelecedUser] = useState(null);
 
   const timeFormat = (timeStamp) => {
     return timeStamp.toLocaleString([], { hour: "2-digit", minute: "2-digit" });
@@ -98,7 +97,7 @@ const Messages = () => {
   }, [chatClient, location?.state, navigate]);
 
   const scrollToMessage = () => {
-    messageEndRef.current.scrollIntoView({ behavior: "smooth" });
+    messageEndRef?.current?.scrollIntoView({ behavior: "smooth" });
   };
 
   useEffect(() => {
@@ -144,7 +143,7 @@ const Messages = () => {
       const msgOptions = {
         chatType: "singleChat",
         type: "txt",
-        to: location?.state?.userId === reciepent ? "Siddique" : "Shahnewaz",
+        to: selectedUser,
         msg: messageText,
       };
 
@@ -202,114 +201,136 @@ const Messages = () => {
               <h1 className="font-semibold">Users</h1>
             </div>
 
-            {allUsers.map((item, index) => (
-              <>
-                <div key={index + 1}>
-                  <button
-                    onClick={handleUid(item.uuid)}
-                    className="mb-1 cursor-pointer"
-                  >
-                    {index + 1}. {item.username}
-                  </button>
-                </div>
-              </>
-            ))}
+            {allUsers
+              .filter((item) => item.username != location?.state?.userId)
+              .map((item, index) => (
+                <>
+                  <div key={index + 1}>
+                    <button
+                      onClick={() => setSelecedUser(item.username)}
+                      className="mb-1 rounded-md cursor-pointer transition hover:bg-gradient-to-r from-blue-700 to-green-700 px-2 py-1 "
+                    >
+                      {index + 1}. {item.username}
+                    </button>
+                  </div>
+                </>
+              ))}
           </div>
 
-          <div className="sidebar-settings flex flex-1 flex-col-reverse mb-10 mx-5  ">
-            <span onClick={handleLogout} className="cursor-pointer">
-              <IoLogOutOutline size={30} color="white" />
-            </span>
+          <div className="sidebar-settings flex flex-1  mx-5  gap-3">
+            <div>
+              <span onClick={handleLogout} className="cursor-pointer">
+                <IoLogOutOutline size={30} color="white" />
+              </span>
+              <h1 className="text-white cursor-pointer hover:text-green-400">
+                {location?.state?.userId}
+              </h1>
+            </div>
           </div>
         </div>
         <div className="main-chat-area flex flex-col flex-1">
-          <div className="chat-header flex justify-between  border-b border-neutral-500 bg-white/10 backdrop-blur-2xl">
-            <div className="chear-header-left flex items-center gap-3 text-white m-4">
-              <img
-                className="w-12 h-12 border border-green-500 rounded-full object-cover"
-                src="https://plus.unsplash.com/premium_photo-1689568126014-06fea9d5d341?fm=jpg&q=60&w=3000&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MXx8cHJvZmlsZXxlbnwwfHwwfHx8MA%3D%3D"
-                alt=""
-              />
-              <div className="chat_header_info">
-                <h1 className="font-semibold text-[17px]">
-                  {location?.state?.userId}
-                </h1>
-                <p className="text-xs text-neutral-300 ">Web Developer</p>
-              </div>
-            </div>
-            <div className="chear-header-right-calling flex gap-5 items-center mr-4">
-              <span className="hover:bg-green-700 w-8 h-8 flex items-center justify-center transition rounded-lg cursor-pointer">
-                <IoCallOutline size={22} color="white" />
-              </span>
+          {selectedUser ? (
+            <>
+              <div className="chat-header flex justify-between  border-b border-neutral-500 bg-white/10 backdrop-blur-2xl">
+                <div className="chear-header-left flex items-center gap-3 text-white m-4">
+                  <img
+                    className="w-12 h-12 border border-green-500 rounded-full object-cover"
+                    src="https://plus.unsplash.com/premium_photo-1689568126014-06fea9d5d341?fm=jpg&q=60&w=3000&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MXx8cHJvZmlsZXxlbnwwfHwwfHx8MA%3D%3D"
+                    alt=""
+                  />
 
-              <span className="hover:bg-green-700 w-8 h-8 flex items-center justify-center transition rounded-lg cursor-pointer">
-                <IoVideocamOutline size={22} color="white" />
-              </span>
-              <span className="hover:bg-green-700 w-8 h-8 flex items-center justify-center transition rounded-lg cursor-pointer">
-                <HiOutlineDotsHorizontal size={22} color="white" />
-              </span>
-            </div>
-          </div>
-
-          {/* chat area */}
-          <div className="  text-white flex-1 overflow-y-auto ">
-            {messages.map((item, index) => (
-              <>
-                <div
-                  key={index + 1}
-                  className={` ${item.isOwn ? "text-right" : "text-left"} m-5`}
-                >
-                  <div>
-                    <p className="text-[14px] text-neutral-300 font-semibold mb-[2px] px-2">
-                      {item.isOwn ? "You" : item.userId}
-                    </p>
-                    <p className="text-[11px] mb-2 text-neutral-400 font-semibold  px-2">
-                      {timeFormat(item.time)}
-                    </p>
-                  </div>
-                  <div
-                    className={` ${
-                      item.isOwn
-                        ? "bg-gradient-to-r from-blue-600/80 to-green-700"
-                        : "bg-gradient-to-r from-white/10 to-white/20 text-neutral-200 border border-neutral-500 backdrop-blur-3xl"
-                    }  inline-block max-w-96  px-4 py-2 rounded-2xl mb-2`}
-                  >
-                    <h1 className=" text-left">{item.msgContent}</h1>
+                  <div className="chat_header_info">
+                    <h1 className="font-semibold text-[17px]">
+                      {selectedUser}
+                    </h1>
+                    <p className="text-xs text-neutral-300 ">Web Developer</p>
                   </div>
                 </div>
-              </>
-            ))}
-            <div ref={messageEndRef}></div>
-          </div>
-          <div className="chat-input flex justify-between items-center gap-3 border-t border-neutral-500 bg-white/10 backdrop-blur-2xl p-5 relative">
-            <span>
-              <FiLink color="white" size={22} />
-            </span>
-            <div className="flex flex-1 ">
-              <input
-                name="newMessage"
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                type="text"
-                placeholder="Message"
-                className="bg-white/10 text-white "
-              />
+
+                <div className="chear-header-right-calling flex gap-5 items-center mr-4">
+                  <span className="hover:bg-green-700 w-8 h-8 flex items-center justify-center transition rounded-lg cursor-pointer">
+                    <IoCallOutline size={22} color="white" />
+                  </span>
+
+                  <span className="hover:bg-green-700 w-8 h-8 flex items-center justify-center transition rounded-lg cursor-pointer">
+                    <IoVideocamOutline size={22} color="white" />
+                  </span>
+                  <span className="hover:bg-green-700 w-8 h-8 flex items-center justify-center transition rounded-lg cursor-pointer">
+                    <HiOutlineDotsHorizontal size={22} color="white" />
+                  </span>
+                </div>
+              </div>
+
+              {/* chat area */}
+              <div className="  text-white flex-1 overflow-y-auto ">
+                {messages
+                  .filter((msg) => msg.userId === selectedUser)
+                  .map((item, index) => (
+                    <>
+                      <div
+                        key={index + 1}
+                        className={` ${
+                          item.isOwn ? "text-right" : "text-left"
+                        } m-5`}
+                      >
+                        <div>
+                          <p className="text-[14px] text-neutral-300 font-semibold mb-[2px] px-2">
+                            {item.isOwn ? "You" : item.userId}
+                          </p>
+                          <p className="text-[11px] mb-2 text-neutral-400 font-semibold  px-2">
+                            {timeFormat(item.time)}
+                          </p>
+                        </div>
+                        <div
+                          className={` ${
+                            item.isOwn
+                              ? "bg-gradient-to-r from-blue-600/80 to-green-700"
+                              : "bg-gradient-to-r from-white/10 to-white/20 text-neutral-200 border border-neutral-500 backdrop-blur-3xl"
+                          }  inline-block max-w-96  px-4 py-2 rounded-2xl mb-2`}
+                        >
+                          <h1 className=" text-left">{item.msgContent}</h1>
+                        </div>
+                      </div>
+                    </>
+                  ))}
+                <div ref={messageEndRef}></div>
+              </div>
+
+              <div className="chat-input flex justify-between items-center gap-3 border-t border-neutral-500 bg-white/10 backdrop-blur-2xl p-5 relative">
+                <span>
+                  <FiLink color="white" size={22} />
+                </span>
+                <div className="flex flex-1 ">
+                  <input
+                    name="newMessage"
+                    value={newMessage}
+                    onChange={(e) => setNewMessage(e.target.value)}
+                    type="text"
+                    placeholder="Message"
+                    className="bg-white/10 text-white "
+                  />
+                </div>
+                <span className="absolute right-24 hover:cursor-pointer">
+                  <FaRegSmile color="white" size={20} />
+                </span>
+                <button
+                  onClick={handleSendMessage}
+                  disabled={!newMessage.trim()}
+                  className={`hover:text-2xl text-lg transition-colors   rounded-md p-2 ${
+                    !newMessage.trim()
+                      ? "cursor-not-allowed bg-gradient-to-br from-neutral-400 to-neutral-500"
+                      : "cursor-pointer bg-gradient-to-br from-green-500 to-pink-500"
+                  }  w-12 h-12 flex justify-center items-center`}
+                >
+                  <BsSend color="white" />
+                </button>
+              </div>
+            </>
+          ) : (
+            <div className="flex justify-center flex-row items-center text-white text-5xl">
+              Please select a user to start chatting <br />
             </div>
-            <span className="absolute right-24 hover:cursor-pointer">
-              <FaRegSmile color="white" size={20} />
-            </span>
-            <button
-              onClick={handleSendMessage}
-              disabled={!newMessage.trim()}
-              className={`hover:text-2xl text-lg transition-colors   rounded-md p-2 ${
-                !newMessage.trim()
-                  ? "cursor-not-allowed bg-gradient-to-br from-neutral-400 to-neutral-500"
-                  : "cursor-pointer bg-gradient-to-br from-green-500 to-pink-500"
-              }  w-12 h-12 flex justify-center items-center`}
-            >
-              <BsSend color="white" />
-            </button>
-          </div>
+          )}
         </div>
       </div>
     </>
