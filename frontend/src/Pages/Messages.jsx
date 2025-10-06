@@ -33,10 +33,28 @@ const Messages = () => {
     return timeStamp.toLocaleString([], { hour: "2-digit", minute: "2-digit" });
   };
 
+  const messageStatusIcon = (status) => {
+    switch (status) {
+      case "sending":
+        return <span className="text-gray-400">⏱️</span>;
+      case "sent":
+        return <span className="text-white">✓</span>;
+      case "delivered":
+        return <span className="text-white">✓✓</span>;
+      case "read":
+        return <span className="text-blue-400">✓✓</span>;
+      case "failed":
+        return <span className="text-red-500">❌</span>;
+      default:
+        return null;
+    }
+  };
+
   const getAllUser = async () => {
     const userResponse = await axios.get(`http://localhost:6060/api/users`);
     const user = userResponse?.data?.data;
     setAllUsers(() => [...user]);
+    console.log("all user", user);
   };
 
   useEffect(() => {
@@ -63,8 +81,6 @@ const Messages = () => {
         toast.success("Connected to chat server");
       },
       onTextMessage: (message) => {
-        console.log("message received or not1", message);
-
         const isMyMessage = message.from === loggedInUser;
 
         if (!isMyMessage) {
@@ -74,12 +90,34 @@ const Messages = () => {
             msgContent: message.msg,
             time: new Date(),
             isOwn: false,
+            status: "received",
           };
 
           setMessages((prevMessage) => [...prevMessage, recievedMsg]);
+
+          chatClient.send({
+            type: "read",
+            to: message.from,
+            id: message.id,
+          });
         }
       },
-
+      onDelivered: (message) => {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === message.id
+              ? { ...m, id: message.id, status: "delivered" }
+              : m
+          )
+        );
+      },
+      onReadMessage: (message) => {
+        setMessages((prevMessage) =>
+          prevMessage.map((m) =>
+            m.id === message.id ? { ...m, id: message.id, status: "read" } : m
+          )
+        );
+      },
       onError: (error) => {
         toast.error("Error Message:" + error.message, {
           position: "top-center",
@@ -129,38 +167,39 @@ const Messages = () => {
       });
     }
 
+    const tempId = Date.now();
+    const sendingMessage = {
+      id: tempId,
+      receiver: selectedUser,
+      userId: loggedInUser,
+      msgContent: newMessage,
+      time: new Date(),
+      isOwn: true,
+      status: "sending",
+    };
+
+    setMessages((prevMessage) => [...prevMessage, sendingMessage]);
+    const txtMessage = newMessage;
+    setNewMessage("");
+
     try {
       const msgOptions = {
         chatType: "singleChat",
         type: "txt",
         to: selectedUser,
-        msg: newMessage,
+        msg: txtMessage,
       };
 
       const msg = AgoraChat.message.create(msgOptions);
       await chatClient.send(msg);
 
-      const tempId = Date.now();
-      const sendingMessage = {
-        id: tempId,
-        receiver: selectedUser,
-        userId: loggedInUser,
-        msgContent: newMessage,
-        time: new Date(),
-        isOwn: true,
-        status: "sending",
-      };
-
-      setMessages((prevMessage) => [...prevMessage, sendingMessage]);
+      setMessages((prevMessage) =>
+        prevMessage.map((m) =>
+          m.id === tempId ? { ...m, id: msg.id, status: "sent" } : m
+        )
+      );
 
       setNewMessage("");
-
-      // setMessages((prevMessage) =>
-      //   prevMessage.map((m) =>
-      //     m.id === tempId ? { ...m, id: msg.id, status: "sent" } : m
-      //   )
-      // );
-      // setNewMessage("");
     } catch (error) {
       toast.error(error.message, {
         position: "top-center",
@@ -226,8 +265,8 @@ const Messages = () => {
               ))}
           </div>
 
-          <div className="sidebar-settings flex flex-1  mx-5  gap-3">
-            <div className="mt-10 flex gap-2 items-center">
+          <div className="sidebar-settings h-full flex flex-1  mx-5  mb-10">
+            <div className=" flex gap-2 items-end">
               <span onClick={handleLogout} className="cursor-pointer">
                 <IoLogOutOutline size={30} color="white" />
               </span>
@@ -308,6 +347,7 @@ const Messages = () => {
                           }  inline-block max-w-96  px-4 py-2 rounded-2xl mb-2`}
                         >
                           <h1 className=" text-left">{item.msgContent}</h1>
+                          {item.isOwn ? messageStatusIcon(item.status) : ""}
                         </div>
                       </div>
                     </>

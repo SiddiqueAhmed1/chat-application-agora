@@ -13,6 +13,12 @@ const Login = () => {
   const [isLogging, setIsLogging] = useState(false);
   const { chatClient, isInitialized } = useAgoraChat();
 
+  const getAllUser = async () => {
+    const userResponse = await axios.get(`http://localhost:6060/api/users`);
+    const user = userResponse?.data?.data;
+    setAllUsers(() => [...user]);
+  };
+
   const handleLogin = async () => {
     if (!email || !password) {
       toast.error("Email and Password need", {
@@ -26,6 +32,10 @@ const Login = () => {
         position: "top-center",
       });
     }
+
+    const userResponse = await axios.get(`http://localhost:6060/api/users`);
+    const user = userResponse?.data?.data;
+    const checkUser = user.find((item) => item.username === email);
 
     try {
       setIsLogging(true);

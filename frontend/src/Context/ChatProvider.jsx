@@ -11,6 +11,7 @@ const ChatProvider = ({ children }) => {
     if (!chatClient.current) {
       chatClient.current = new AgoraChat.connection({
         appKey: "711398512#1603074",
+        delivery: true,
       });
     }
 
