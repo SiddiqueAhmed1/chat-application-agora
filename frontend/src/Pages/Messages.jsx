@@ -22,7 +22,7 @@ const Messages = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [newMessage, setNewMessage] = useState("");
-  const [setIsLoggedIn] = useState(false);
+  const [isLoggIn, setIsLoggedIn] = useState(false);
   const [messages, setMessages] = useState([]);
   const messageEndRef = useRef(null);
   const [allUsers, setAllUsers] = useState([]);
@@ -37,7 +37,6 @@ const Messages = () => {
     const userResponse = await axios.get(`http://localhost:6060/api/users`);
     const user = userResponse?.data?.data;
     setAllUsers(() => [...user]);
-    console.log("user data", user.username);
   };
 
   useEffect(() => {
@@ -64,21 +63,18 @@ const Messages = () => {
         toast.success("Connected to chat server");
       },
       onTextMessage: (message) => {
-        const fromuser = message.from;
-        const touser = message.to;
+        console.log("message received or not1", message);
 
-        if (
-          (fromuser === selectedUser && touser === loggedInUser) ||
-          (fromuser === loggedInUser && touser === selectedUser)
-        ) {
+        const isMyMessage = message.from === loggedInUser;
+
+        if (!isMyMessage) {
           const recievedMsg = {
-            reciever: touser,
-            userId: fromuser,
+            receiver: loggedInUser,
+            userId: message.from,
             msgContent: message.msg,
             time: new Date(),
-            isOwn: fromuser === loggedInUser,
+            isOwn: false,
           };
-          console.log("Message checking", message);
 
           setMessages((prevMessage) => [...prevMessage, recievedMsg]);
         }
@@ -101,6 +97,7 @@ const Messages = () => {
     };
   }, [chatClient, location?.state, navigate]);
 
+  // scroll when new message arrive
   const scrollToMessage = () => {
     messageEndRef?.current?.scrollIntoView({ behavior: "smooth" });
   };
@@ -109,6 +106,7 @@ const Messages = () => {
     scrollToMessage();
   }, [messages]);
 
+  // login to agora
   const loginToAgora = async () => {
     // Check if already logged in
     if (chatClient.user) {
@@ -123,6 +121,7 @@ const Messages = () => {
     }
   };
 
+  // handle messages
   const handleSendMessage = async () => {
     if (!newMessage.trim()) {
       return toast.error("Message field empty", {
@@ -130,39 +129,38 @@ const Messages = () => {
       });
     }
 
-    const tempId = Date.now();
-    const sendingMessage = {
-      id: tempId,
-      reciever: selectedUser,
-      userId: loggedInUser,
-      msgContent: newMessage,
-      time: new Date(),
-      isOwn: true,
-      status: "sending",
-    };
-    console.log("check message object", sendingMessage);
-
-    setMessages((prevMessage) => [...prevMessage, sendingMessage]);
-    const messageText = newMessage;
-    setNewMessage("");
-
     try {
       const msgOptions = {
         chatType: "singleChat",
         type: "txt",
         to: selectedUser,
-        msg: messageText,
+        msg: newMessage,
       };
 
       const msg = AgoraChat.message.create(msgOptions);
       await chatClient.send(msg);
 
-      setMessages((prevMessage) =>
-        prevMessage.map((m) =>
-          m.id === tempId ? { ...m, id: msg.id, status: "sent" } : m
-        )
-      );
+      const tempId = Date.now();
+      const sendingMessage = {
+        id: tempId,
+        receiver: selectedUser,
+        userId: loggedInUser,
+        msgContent: newMessage,
+        time: new Date(),
+        isOwn: true,
+        status: "sending",
+      };
+
+      setMessages((prevMessage) => [...prevMessage, sendingMessage]);
+
       setNewMessage("");
+
+      // setMessages((prevMessage) =>
+      //   prevMessage.map((m) =>
+      //     m.id === tempId ? { ...m, id: msg.id, status: "sent" } : m
+      //   )
+      // );
+      // setNewMessage("");
     } catch (error) {
       toast.error(error.message, {
         position: "top-center",
@@ -189,7 +187,7 @@ const Messages = () => {
           <div className="sidebar-header  text-white border-b border-neutral-500 p-5">
             <h1 className="text-2xl font-semibold">Agora Chat</h1>
             <p className="text-[13px] py-2 text-green-400 font-semibold">
-              4 online
+              {allUsers.length - 1} online
             </p>
           </div>
           <div className="sidebar-search p-3 flex flex-row border border-neutral-300 rounded-md m-5 h-12 justify-center items-center ">
@@ -215,7 +213,11 @@ const Messages = () => {
                   <div key={index + 1}>
                     <button
                       onClick={() => setSelecedUser(item.username)}
-                      className="mb-1 rounded-md cursor-pointer transition hover:bg-gradient-to-r from-blue-700 to-green-700 px-2 py-1 "
+                      className={`mb-1 rounded-md cursor-pointer transition ${
+                        item.username === selectedUser
+                          ? "bg-gradient-to-r from-blue-700 to-green-700"
+                          : "hover:bg-gradient-to-r from-blue-700/70 to-green-700/70"
+                      }  px-2 py-1 text-[15px]`}
                     >
                       {index + 1}. {item.username}
                     </button>
@@ -225,17 +227,21 @@ const Messages = () => {
           </div>
 
           <div className="sidebar-settings flex flex-1  mx-5  gap-3">
-            <div>
+            <div className="mt-10 flex gap-2 items-center">
               <span onClick={handleLogout} className="cursor-pointer">
                 <IoLogOutOutline size={30} color="white" />
               </span>
-              <h1 className="text-white cursor-pointer hover:text-green-400">
+              <h1 className="text-purple-400 font-semibold cursor-pointer hover:text-green-400">
                 {loggedInUser}
               </h1>
             </div>
           </div>
         </div>
-        <div className="main-chat-area flex flex-col flex-1">
+        <div
+          className={`main-chat-area ${
+            selectedUser ? "flex-col flex " : ""
+          } flex-1`}
+        >
           {selectedUser ? (
             <>
               <div className="chat-header flex justify-between  border-b border-neutral-500 bg-white/10 backdrop-blur-2xl">
@@ -274,9 +280,9 @@ const Messages = () => {
                   .filter(
                     (msg) =>
                       (msg.userId === loggedInUser &&
-                        msg.reciever === selectedUser) ||
+                        msg.receiver === selectedUser) ||
                       (msg.userId === selectedUser &&
-                        msg.reciever === loggedInUser)
+                        msg.receiver === loggedInUser)
                   )
                   .map((item, index) => (
                     <>
@@ -340,8 +346,8 @@ const Messages = () => {
               </div>
             </>
           ) : (
-            <div className="flex justify-center flex-row items-center text-white text-5xl">
-              Please select a user to start chatting <br />
+            <div className="flex h-full items-center justify-center  text-white text-4xl">
+              <h1>Please select a user to start chatting</h1>
             </div>
           )}
         </div>
