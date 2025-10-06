@@ -27,6 +27,7 @@ const Messages = () => {
   const messageEndRef = useRef(null);
   const [allUsers, setAllUsers] = useState([]);
   const [selectedUser, setSelecedUser] = useState(null);
+  const loggedInUser = location?.state?.userId;
 
   const timeFormat = (timeStamp) => {
     return timeStamp.toLocaleString([], { hour: "2-digit", minute: "2-digit" });
@@ -40,7 +41,7 @@ const Messages = () => {
   };
 
   useEffect(() => {
-    if (!location?.state?.userId || !location?.state?.accessToken) {
+    if (!loggedInUser || !location?.state?.accessToken) {
       toast.error("Not logged in", {
         position: "top-center",
       });
@@ -60,18 +61,22 @@ const Messages = () => {
     // event handler
     chatClient.addEventHandler("messageHandler", {
       onConnected: () => {
-        setIsLoggedIn(true);
         toast.success("Connected to chat server");
       },
       onTextMessage: (message) => {
-        const isMyMsg = chatClient.user === message.from;
+        const fromuser = message.from;
+        const touser = message.to;
 
-        if (!isMyMsg) {
+        if (
+          (fromuser === selectedUser && touser === loggedInUser) ||
+          (fromuser === loggedInUser && touser === selectedUser)
+        ) {
           const recievedMsg = {
-            userId: message.from,
+            reciever: touser,
+            userId: fromuser,
             msgContent: message.msg,
             time: new Date(),
-            isOwn: false,
+            isOwn: fromuser === loggedInUser,
           };
           console.log("Message checking", message);
 
@@ -112,7 +117,7 @@ const Messages = () => {
     } else {
       // Login if not already logged in
       await chatClient.open({
-        user: location?.state?.userId,
+        user: loggedInUser,
         accessToken: location?.state?.accessToken,
       });
     }
@@ -128,12 +133,14 @@ const Messages = () => {
     const tempId = Date.now();
     const sendingMessage = {
       id: tempId,
-      userId: location?.state?.userId,
+      reciever: selectedUser,
+      userId: loggedInUser,
       msgContent: newMessage,
       time: new Date(),
       isOwn: true,
       status: "sending",
     };
+    console.log("check message object", sendingMessage);
 
     setMessages((prevMessage) => [...prevMessage, sendingMessage]);
     const messageText = newMessage;
@@ -202,7 +209,7 @@ const Messages = () => {
             </div>
 
             {allUsers
-              .filter((item) => item.username != location?.state?.userId)
+              .filter((item) => item.username != loggedInUser)
               .map((item, index) => (
                 <>
                   <div key={index + 1}>
@@ -223,7 +230,7 @@ const Messages = () => {
                 <IoLogOutOutline size={30} color="white" />
               </span>
               <h1 className="text-white cursor-pointer hover:text-green-400">
-                {location?.state?.userId}
+                {loggedInUser}
               </h1>
             </div>
           </div>
@@ -264,7 +271,13 @@ const Messages = () => {
               {/* chat area */}
               <div className="  text-white flex-1 overflow-y-auto ">
                 {messages
-                  .filter((msg) => msg.userId === selectedUser)
+                  .filter(
+                    (msg) =>
+                      (msg.userId === loggedInUser &&
+                        msg.reciever === selectedUser) ||
+                      (msg.userId === selectedUser &&
+                        msg.reciever === loggedInUser)
+                  )
                   .map((item, index) => (
                     <>
                       <div
