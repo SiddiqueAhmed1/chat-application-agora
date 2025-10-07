@@ -22,7 +22,7 @@ const Messages = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [newMessage, setNewMessage] = useState("");
-  const [isLoggIn, setIsLoggedIn] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [messages, setMessages] = useState([]);
   const messageEndRef = useRef(null);
   const [allUsers, setAllUsers] = useState([]);
@@ -42,7 +42,7 @@ const Messages = () => {
       case "delivered":
         return <span className="text-white">✓✓</span>;
       case "read":
-        return <span className="text-blue-400">✓✓</span>;
+        return <span className="text-red-500">✓✓</span>;
       case "failed":
         return <span className="text-red-500">❌</span>;
       default:
@@ -58,82 +58,134 @@ const Messages = () => {
   };
 
   useEffect(() => {
-    if (!loggedInUser || !location?.state?.accessToken) {
-      toast.error("Not logged in", {
-        position: "top-center",
-      });
+    const initializeChat = async () => {
+      if (!loggedInUser || !location?.state?.accessToken) {
+        toast.error("Not logged in", { position: "top-center" });
+        navigate("/login");
+        return;
+      }
 
-      navigate("/login");
-      return;
-    }
+      if (!chatClient) {
+        toast.error("Not connect yet", { position: "top-center" });
+        navigate("/login");
+        return;
+      }
 
-    if (!chatClient) {
-      toast.error("Not connect yet", {
-        position: "top-center",
-      });
-      navigate("/login");
-      return;
-    }
+      try {
+        // Await login first
+        await loginToAgora();
 
-    // event handler
-    chatClient.addEventHandler("messageHandler", {
-      onConnected: () => {
-        toast.success("Connected to chat server");
-      },
-      onTextMessage: (message) => {
-        const isMyMessage = message.from === loggedInUser;
+        // Now add handlers AFTER login/connect
+        chatClient.addEventHandler("messageHandler", {
+          onConnected: () => {
+            toast.success("Connected to chat server");
+          },
+          onTextMessage: (message) => {
+            const isMyMessage = message.from === loggedInUser;
 
-        if (!isMyMessage) {
-          const recievedMsg = {
-            receiver: loggedInUser,
-            userId: message.from,
-            msgContent: message.msg,
-            time: new Date(),
-            isOwn: false,
-            status: "received",
-          };
+            if (!isMyMessage) {
+              const recievedMsg = {
+                id: message.id,
+                receiver: loggedInUser,
+                userId: message.from,
+                msgContent: message.msg,
+                time: new Date(),
+                isOwn: false,
+                status: "delivered", // Incoming: always start as "delivered" (received)
+              };
 
-          setMessages((prevMessage) => [...prevMessage, recievedMsg]);
+              setMessages((prevMessage) => [...prevMessage, recievedMsg]);
 
-          chatClient.send({
-            type: "read",
-            to: message.from,
-            id: message.id,
-          });
-        }
-      },
-      onDelivered: (message) => {
-        setMessages((prev) =>
-          prev.map((m) =>
-            m.id === message.id
-              ? { ...m, id: message.id, status: "delivered" }
-              : m
-          )
-        );
-      },
-      onReadMessage: (message) => {
-        setMessages((prevMessage) =>
-          prevMessage.map((m) =>
-            m.id === message.id ? { ...m, id: message.id, status: "read" } : m
-          )
-        );
-      },
-      onError: (error) => {
-        toast.error("Error Message:" + error.message, {
-          position: "top-center",
+              // Send read receipt - Fix: Use message.create like for text messages
+              const readMsg = AgoraChat.message.create({
+                chatType: "singleChat",
+                type: "read",
+                to: message.from,
+                mid: message.id, // Use mid for the target message ID
+              });
+              chatClient.send(readMsg);
+            }
+          },
+          onDeliveredMessage: (message) => {
+            console.log("Delivered callback:", message);
+            console.log("Looking for message.mid:", message.mid);
+
+            // Use functional update to avoid stale closure; log inside map for debugging
+            setMessages((prev) => {
+              console.log(
+                "Current messages IDs (fresh):",
+                prev.map((m) => m.id)
+              ); // Now fresh!
+              let foundMatch = false;
+              const updated = prev.map((m) => {
+                if (m.id === message.mid) {
+                  foundMatch = true;
+                  console.log(
+                    "✅ Found match and updating:",
+                    m.id,
+                    "to 'delivered'"
+                  ); // Debug log
+                  return { ...m, status: "delivered" };
+                }
+                return m;
+              });
+              if (!foundMatch) {
+                console.log("❌ No match found for mid:", message.mid); // Debug: helps if array is wrong
+              }
+              return updated;
+            });
+          },
+          onReadMessage: (message) => {
+            console.log("Read callback:", message); // Add log for read too
+
+            // Same as above—functional update + debug logs
+            setMessages((prevMessage) => {
+              console.log(
+                "Current messages IDs (fresh for read):",
+                prevMessage.map((m) => m.id)
+              );
+              let foundMatch = false;
+              const updated = prevMessage.map((m) => {
+                if (m.id === message.mid) {
+                  foundMatch = true;
+                  console.log(
+                    "✅ Found match and updating:",
+                    m.id,
+                    "to 'read'"
+                  ); // Debug log
+                  return { ...m, status: "read" };
+                }
+                return m;
+              });
+              if (!foundMatch) {
+                console.log("❌ No match found for read mid:", message.mid);
+              }
+              return updated;
+            });
+          },
+          onError: (error) => {
+            toast.error("Error Message:" + error.message, {
+              position: "top-center",
+            });
+          },
         });
-      },
-    });
 
-    getAllUser();
-    loginToAgora();
+        await getAllUser(); // Call after connect too
+      } catch (error) {
+        console.error("Init error:", error);
+        toast.error("Chat init failed", { position: "top-center" });
+      }
+    };
 
+    initializeChat();
+
+    // Cleanup
     return () => {
       if (chatClient) {
         chatClient.removeEventHandler("messageHandler");
       }
     };
-  }, [chatClient, location?.state, navigate]);
+  }, [chatClient, location?.state, navigate, loggedInUser]);
 
   // scroll when new message arrive
   const scrollToMessage = () => {
@@ -146,23 +198,22 @@ const Messages = () => {
 
   // login to agora
   const loginToAgora = async () => {
-    // Check if already logged in
     if (chatClient.user) {
-      console.log("Already logged in as:", chatClient.user);
       setIsLoggedIn(true);
+      return; // Already logged in
     } else {
-      // Login if not already logged in
       await chatClient.open({
         user: loggedInUser,
         accessToken: location?.state?.accessToken,
       });
+      setIsLoggedIn(true);
     }
   };
 
   // handle messages
   const handleSendMessage = async () => {
-    if (!newMessage.trim()) {
-      return toast.error("Message field empty", {
+    if (!newMessage.trim() || !selectedUser) {
+      return toast.error("Message field empty or no user selected", {
         position: "top-center",
       });
     }
@@ -198,12 +249,14 @@ const Messages = () => {
           m.id === tempId ? { ...m, id: msg.id, status: "sent" } : m
         )
       );
-
-      setNewMessage("");
     } catch (error) {
-      toast.error(error.message, {
-        position: "top-center",
-      });
+      toast.error(error.message, { position: "top-center" });
+      // Optional: Update failed status
+      setMessages((prevMessage) =>
+        prevMessage.map((m) =>
+          m.id === tempId ? { ...m, status: "failed" } : m
+        )
+      );
     }
   };
 
@@ -248,20 +301,18 @@ const Messages = () => {
             {allUsers
               .filter((item) => item.username != loggedInUser)
               .map((item, index) => (
-                <>
-                  <div key={index + 1}>
-                    <button
-                      onClick={() => setSelecedUser(item.username)}
-                      className={`mb-1 rounded-md cursor-pointer transition ${
-                        item.username === selectedUser
-                          ? "bg-gradient-to-r from-blue-700 to-green-700"
-                          : "hover:bg-gradient-to-r from-blue-700/70 to-green-700/70"
-                      }  px-2 py-1 text-[15px]`}
-                    >
-                      {index + 1}. {item.username}
-                    </button>
-                  </div>
-                </>
+                <div key={index + 1}>
+                  <button
+                    onClick={() => setSelecedUser(item.username)}
+                    className={`mb-1 rounded-md cursor-pointer transition ${
+                      item.username === selectedUser
+                        ? "bg-gradient-to-r from-blue-700 to-green-700"
+                        : "hover:bg-gradient-to-r from-blue-700/70 to-green-700/70"
+                    }  px-2 py-1 text-[15px]`}
+                  >
+                    {index + 1}. {item.username}
+                  </button>
+                </div>
               ))}
           </div>
 
@@ -324,33 +375,31 @@ const Messages = () => {
                         msg.receiver === loggedInUser)
                   )
                   .map((item, index) => (
-                    <>
-                      <div
-                        key={index + 1}
-                        className={` ${
-                          item.isOwn ? "text-right" : "text-left"
-                        } m-5`}
-                      >
-                        <div>
-                          <p className="text-[14px] text-neutral-300 font-semibold mb-[2px] px-2">
-                            {item.isOwn ? "You" : item.userId}
-                          </p>
-                          <p className="text-[11px] mb-2 text-neutral-400 font-semibold  px-2">
-                            {timeFormat(item.time)}
-                          </p>
-                        </div>
-                        <div
-                          className={` ${
-                            item.isOwn
-                              ? "bg-gradient-to-r from-blue-600/80 to-green-700"
-                              : "bg-gradient-to-r from-white/10 to-white/20 text-neutral-200 border border-neutral-500 backdrop-blur-3xl"
-                          }  inline-block max-w-96  px-4 py-2 rounded-2xl mb-2`}
-                        >
-                          <h1 className=" text-left">{item.msgContent}</h1>
-                          {item.isOwn ? messageStatusIcon(item.status) : ""}
-                        </div>
+                    <div
+                      key={index + 1}
+                      className={` ${
+                        item.isOwn ? "text-right" : "text-left"
+                      } m-5`}
+                    >
+                      <div>
+                        <p className="text-[14px] text-neutral-300 font-semibold mb-[2px] px-2">
+                          {item.isOwn ? "You" : item.userId}
+                        </p>
+                        <p className="text-[11px] mb-2 text-neutral-400 font-semibold  px-2">
+                          {timeFormat(item.time)}
+                        </p>
                       </div>
-                    </>
+                      <div
+                        className={` ${
+                          item.isOwn
+                            ? "bg-gradient-to-r from-blue-600/80 to-green-700"
+                            : "bg-gradient-to-r from-white/10 to-white/20 text-neutral-200 border border-neutral-500 backdrop-blur-3xl"
+                        }  inline-block max-w-96  px-4 py-2 rounded-2xl mb-2`}
+                      >
+                        <h1 className=" text-left">{item.msgContent}</h1>
+                        {item.isOwn && messageStatusIcon(item.status)}
+                      </div>
+                    </div>
                   ))}
                 <div ref={messageEndRef}></div>
               </div>
