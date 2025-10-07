@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import agoraLogo from "../../public/agora-logo.png";
 import axios from "axios";
+import base_url from "../Utils/api";
 
 const Register = () => {
   const [email, setEmail] = useState("");
@@ -36,11 +37,7 @@ const Register = () => {
         password,
       };
 
-      const response = await axios.post(
-        `http://localhost:6060/api/register`,
-        inputData
-      );
-
+      const response = await axios.post(`${base_url}/api/register`, inputData);
       if (response.data.success) {
         toast.success(response.data.message);
         navigate("/login");

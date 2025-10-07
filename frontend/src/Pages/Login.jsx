@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { useAgoraChat } from "../Context/ChatProvider";
 import agoraLogo from "../../public/agora-logo.png";
 import axios from "axios";
+import base_url from "../Utils/api";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -12,12 +13,6 @@ const Login = () => {
   const navigate = useNavigate();
   const [isLogging, setIsLogging] = useState(false);
   const { chatClient, isInitialized } = useAgoraChat();
-
-  const getAllUser = async () => {
-    const userResponse = await axios.get(`http://localhost:6060/api/users`);
-    const user = userResponse?.data?.data;
-    setAllUsers(() => [...user]);
-  };
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -33,13 +28,9 @@ const Login = () => {
       });
     }
 
-    const userResponse = await axios.get(`http://localhost:6060/api/users`);
-    const user = userResponse?.data?.data;
-    const checkUser = user.find((item) => item.username === email);
-
     try {
       setIsLogging(true);
-      const response = await axios.post(`http://localhost:6060/api/login`, {
+      const response = await axios.post(`${base_url}/api/login`, {
         email,
         password,
       });

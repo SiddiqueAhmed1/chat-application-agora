@@ -15,6 +15,7 @@ import { toast } from "react-toastify";
 import { useAgoraChat } from "../Context/ChatProvider";
 import axios from "axios";
 import { PiUsers } from "react-icons/pi";
+import base_url from "../Utils/api";
 
 const Messages = () => {
   // shared connection
@@ -51,7 +52,7 @@ const Messages = () => {
   };
 
   const getAllUser = async () => {
-    const userResponse = await axios.get(`http://localhost:6060/api/users`);
+    const userResponse = await axios.get(`${base_url}/api/users`);
     const user = userResponse?.data?.data;
     setAllUsers(() => [...user]);
     console.log("all user", user);
@@ -72,7 +73,7 @@ const Messages = () => {
       }
 
       try {
-        // Await login first
+        //  login first
         await loginToAgora();
 
         // Now add handlers AFTER login/connect
@@ -112,19 +113,10 @@ const Messages = () => {
 
             // Use functional update to avoid stale closure; log inside map for debugging
             setMessages((prev) => {
-              console.log(
-                "Current messages IDs (fresh):",
-                prev.map((m) => m.id)
-              ); // Now fresh!
               let foundMatch = false;
               const updated = prev.map((m) => {
                 if (m.id === message.mid) {
                   foundMatch = true;
-                  console.log(
-                    "✅ Found match and updating:",
-                    m.id,
-                    "to 'delivered'"
-                  ); // Debug log
                   return { ...m, status: "delivered" };
                 }
                 return m;

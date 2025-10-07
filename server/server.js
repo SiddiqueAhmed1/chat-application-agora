@@ -9,7 +9,7 @@ const app = express();
 
 // config
 dotenv.config();
-const port = process.env.PORT || 7070;
+const port = process.env.PORT;
 
 //middleware
 app.use(express.json());
