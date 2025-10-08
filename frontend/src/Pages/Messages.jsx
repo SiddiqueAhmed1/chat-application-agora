@@ -95,6 +95,8 @@ const Messages = () => {
                 status: "delivered", // Incoming: always start as "delivered" (received)
               };
 
+              console.log("check text message", message);
+
               setMessages((prevMessage) => [...prevMessage, recievedMsg]);
 
               // Send read receipt - Fix: Use message.create like for text messages
@@ -105,8 +107,10 @@ const Messages = () => {
                 mid: message.id, // Use mid for the target message ID
               });
               chatClient.send(readMsg);
+              console.log("text read message", readMsg);
             }
           },
+
           onDeliveredMessage: (message) => {
             console.log("Delivered callback:", message);
             console.log("Looking for message.mid:", message.mid);
@@ -210,7 +214,7 @@ const Messages = () => {
       });
     }
 
-    const tempId = Date.now();
+    const tempId = Math.floor(Math.random() * 100000);
     const sendingMessage = {
       id: tempId,
       receiver: selectedUser,
@@ -220,6 +224,8 @@ const Messages = () => {
       isOwn: true,
       status: "sending",
     };
+
+    console.log("sending messages", sendingMessage);
 
     setMessages((prevMessage) => [...prevMessage, sendingMessage]);
     const txtMessage = newMessage;

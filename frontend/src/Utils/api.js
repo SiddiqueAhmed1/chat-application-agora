@@ -1,4 +1,4 @@
-let environment = "production";
+let environment = "development";
 
 const base_url = `${
   environment === "production"
