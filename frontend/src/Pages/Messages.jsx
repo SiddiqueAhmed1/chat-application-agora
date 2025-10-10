@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { BsSend } from "react-icons/bs";
 import { FaRegSmile } from "react-icons/fa";
 import { FiLink } from "react-icons/fi";
@@ -27,8 +27,18 @@ const Messages = () => {
   const [messages, setMessages] = useState([]);
   const messageEndRef = useRef(null);
   const [allUsers, setAllUsers] = useState([]);
-  const [selectedUser, setSelecedUser] = useState(null);
+  const [selectedUser, setSelectedUser] = useState(null);
   const loggedInUser = location?.state?.userId;
+  const [isConnected, setIsConnected] = useState(null);
+
+  // Inside Messages component
+  const filteredMessages = useMemo(() => {
+    return messages.filter(
+      (msg) =>
+        (msg.userId === loggedInUser && msg.receiver === selectedUser) ||
+        (msg.userId === selectedUser && msg.receiver === loggedInUser)
+    );
+  }, [messages, loggedInUser, selectedUser]);
 
   const timeFormat = (timeStamp) => {
     return timeStamp.toLocaleString([], { hour: "2-digit", minute: "2-digit" });
@@ -79,6 +89,7 @@ const Messages = () => {
         // Now add handlers AFTER login/connect
         chatClient.addEventHandler("messageHandler", {
           onConnected: () => {
+            setIsConnected(true);
             toast.success("Connected to chat server");
           },
           onTextMessage: (message) => {
@@ -90,7 +101,7 @@ const Messages = () => {
                 receiver: loggedInUser,
                 userId: message.from,
                 msgContent: message.msg,
-                time: new Date(),
+                time: message.time ? new Date(message.time) : new Date(),
                 isOwn: false,
                 status: "delivered", // Incoming: always start as "delivered" (received)
               };
@@ -112,52 +123,23 @@ const Messages = () => {
           },
 
           onDeliveredMessage: (message) => {
-            console.log("Delivered callback:", message);
-            console.log("Looking for message.mid:", message.mid);
-
-            // Use functional update to avoid stale closure; log inside map for debugging
             setMessages((prev) => {
-              let foundMatch = false;
-              const updated = prev.map((m) => {
-                if (m.id === message.mid) {
-                  foundMatch = true;
-                  return { ...m, status: "delivered" };
-                }
-                return m;
-              });
-              if (!foundMatch) {
-                console.log("❌ No match found for mid:", message.mid); // Debug: helps if array is wrong
-              }
+              const updated = prev.map((m) =>
+                m.id === message.mid ? { ...m, status: "delivered" } : m
+              );
               return updated;
             });
           },
           onReadMessage: (message) => {
-            console.log("Read callback:", message); // Add log for read too
-
-            // Same as above—functional update + debug logs
-            setMessages((prevMessage) => {
-              console.log(
-                "Current messages IDs (fresh for read):",
-                prevMessage.map((m) => m.id)
+            setMessages((prev) => {
+              const updated = prev.map((m) =>
+                m.id === message.mid ? { ...m, status: "read" } : m
               );
-              let foundMatch = false;
-              const updated = prevMessage.map((m) => {
-                if (m.id === message.mid) {
-                  foundMatch = true;
-                  console.log(
-                    "✅ Found match and updating:",
-                    m.id,
-                    "to 'read'"
-                  ); // Debug log
-                  return { ...m, status: "read" };
-                }
-                return m;
-              });
-              if (!foundMatch) {
-                console.log("❌ No match found for read mid:", message.mid);
-              }
               return updated;
             });
+          },
+          onDisconnected: () => {
+            setIsConnected(false);
           },
           onError: (error) => {
             toast.error("Error Message:" + error.message, {
@@ -181,7 +163,18 @@ const Messages = () => {
         chatClient.removeEventHandler("messageHandler");
       }
     };
-  }, [chatClient, location?.state, navigate, loggedInUser]);
+  }, [chatClient, loggedInUser, location?.state?.accessToken, navigate]);
+
+  useEffect(() => {
+    if (
+      !isConnected &&
+      chatClient &&
+      loggedInUser &&
+      location?.state?.accessToken
+    ) {
+      loginToAgora();
+    }
+  }, [isConnected, chatClient, loggedInUser, location?.state?.accessToken]);
 
   // scroll when new message arrive
   const scrollToMessage = () => {
@@ -196,13 +189,20 @@ const Messages = () => {
   const loginToAgora = async () => {
     if (chatClient.user) {
       setIsLoggedIn(true);
-      return; // Already logged in
-    } else {
+      return;
+    }
+    try {
       await chatClient.open({
         user: loggedInUser,
         accessToken: location?.state?.accessToken,
       });
       setIsLoggedIn(true);
+      toast.success("Logged in to Agora Chat");
+      navigate("/messages");
+    } catch (error) {
+      console.error("Login error:", error);
+      toast.error("Failed to log in to chat", { position: "top-center" });
+      navigate("/login");
     }
   };
 
@@ -263,7 +263,9 @@ const Messages = () => {
       if (chatClient) {
         await chatClient.close();
       }
-      toast.success("Logged out");
+      toast.info("Logged out", {
+        position: "top-center",
+      });
       navigate("/login");
     } catch (error) {
       console.error("Logout error:", error);
@@ -299,9 +301,9 @@ const Messages = () => {
             {allUsers
               .filter((item) => item.username != loggedInUser)
               .map((item, index) => (
-                <div key={index + 1}>
+                <div key={item.id}>
                   <button
-                    onClick={() => setSelecedUser(item.username)}
+                    onClick={() => setSelectedUser(item.username)}
                     className={`mb-1 rounded-md cursor-pointer transition ${
                       item.username === selectedUser
                         ? "bg-gradient-to-r from-blue-700 to-green-700"
@@ -364,41 +366,33 @@ const Messages = () => {
 
               {/* chat area */}
               <div className="  text-white flex-1 overflow-y-auto ">
-                {messages
-                  .filter(
-                    (msg) =>
-                      (msg.userId === loggedInUser &&
-                        msg.receiver === selectedUser) ||
-                      (msg.userId === selectedUser &&
-                        msg.receiver === loggedInUser)
-                  )
-                  .map((item, index) => (
-                    <div
-                      key={index + 1}
-                      className={` ${
-                        item.isOwn ? "text-right" : "text-left"
-                      } m-5`}
-                    >
-                      <div>
-                        <p className="text-[14px] text-neutral-300 font-semibold mb-[2px] px-2">
-                          {item.isOwn ? "You" : item.userId}
-                        </p>
-                        <p className="text-[11px] mb-2 text-neutral-400 font-semibold  px-2">
-                          {timeFormat(item.time)}
-                        </p>
-                      </div>
-                      <div
-                        className={` ${
-                          item.isOwn
-                            ? "bg-gradient-to-r from-blue-600/80 to-green-700"
-                            : "bg-gradient-to-r from-white/10 to-white/20 text-neutral-200 border border-neutral-500 backdrop-blur-3xl"
-                        }  inline-block max-w-96  px-4 py-2 rounded-2xl mb-2`}
-                      >
-                        <h1 className=" text-left">{item.msgContent}</h1>
-                        {item.isOwn && messageStatusIcon(item.status)}
-                      </div>
+                {filteredMessages.map((item, index) => (
+                  <div
+                    key={index + 1}
+                    className={` ${
+                      item.isOwn ? "text-right" : "text-left"
+                    } m-5`}
+                  >
+                    <div>
+                      <p className="text-[14px] text-neutral-300 font-semibold mb-[2px] px-2">
+                        {item.isOwn ? "You" : item.userId}
+                      </p>
+                      <p className="text-[11px] mb-2 text-neutral-400 font-semibold  px-2">
+                        {timeFormat(item.time)}
+                      </p>
                     </div>
-                  ))}
+                    <div
+                      className={` ${
+                        item.isOwn
+                          ? "bg-gradient-to-r from-blue-600/80 to-green-700"
+                          : "bg-gradient-to-r from-white/10 to-white/20 text-neutral-200 border border-neutral-500 backdrop-blur-3xl"
+                      }  inline-block max-w-96  px-4 py-2 rounded-2xl mb-2`}
+                    >
+                      <h1 className=" text-left">{item.msgContent}</h1>
+                      {item.isOwn && messageStatusIcon(item.status)}
+                    </div>
+                  </div>
+                ))}
                 <div ref={messageEndRef}></div>
               </div>
 
