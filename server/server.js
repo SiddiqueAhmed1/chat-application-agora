@@ -14,7 +14,15 @@ const port = process.env.PORT;
 //middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(cors());
+app.use(
+  cors({
+    origin: [
+      "http://localhost:5173",
+      "https://chat-application-react-agora-node.vercel.app",
+    ],
+    credentials: true,
+  }),
+);
 
 app.use(userRouter);
 

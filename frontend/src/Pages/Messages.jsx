@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { BsSend } from "react-icons/bs";
 import { FaRegSmile } from "react-icons/fa";
 import { FiLink } from "react-icons/fi";
-import { HiOutlineDotsHorizontal, HiOutlineUsers } from "react-icons/hi";
+import { HiOutlineDotsHorizontal } from "react-icons/hi";
 import AgoraChat from "agora-chat";
 import {
   IoCallOutline,
@@ -15,7 +15,6 @@ import { toast } from "react-toastify";
 import { useAgoraChat } from "../Context/ChatProvider";
 import axios from "axios";
 import { PiUsers } from "react-icons/pi";
-import base_url from "../Utils/api";
 
 const Messages = () => {
   // shared connection
@@ -27,18 +26,8 @@ const Messages = () => {
   const [messages, setMessages] = useState([]);
   const messageEndRef = useRef(null);
   const [allUsers, setAllUsers] = useState([]);
-  const [selectedUser, setSelectedUser] = useState(null);
+  const [selectedUser, setSelecedUser] = useState(null);
   const loggedInUser = location?.state?.userId;
-  const [isConnected, setIsConnected] = useState(null);
-
-  // Inside Messages component
-  const filteredMessages = useMemo(() => {
-    return messages.filter(
-      (msg) =>
-        (msg.userId === loggedInUser && msg.receiver === selectedUser) ||
-        (msg.userId === selectedUser && msg.receiver === loggedInUser)
-    );
-  }, [messages, loggedInUser, selectedUser]);
 
   const timeFormat = (timeStamp) => {
     return timeStamp.toLocaleString([], { hour: "2-digit", minute: "2-digit" });
@@ -62,10 +51,11 @@ const Messages = () => {
   };
 
   const getAllUser = async () => {
-    const userResponse = await axios.get(`${base_url}/api/users`);
+    const userResponse = await axios.get(
+      `${import.meta.env.VITE_API_URL}/api/users`,
+    );
     const user = userResponse?.data?.data;
     setAllUsers(() => [...user]);
-    console.log("all user", user);
   };
 
   useEffect(() => {
@@ -83,13 +73,12 @@ const Messages = () => {
       }
 
       try {
-        //  login first
+        // Await login first
         await loginToAgora();
 
         // Now add handlers AFTER login/connect
         chatClient.addEventHandler("messageHandler", {
           onConnected: () => {
-            setIsConnected(true);
             toast.success("Connected to chat server");
           },
           onTextMessage: (message) => {
@@ -101,12 +90,10 @@ const Messages = () => {
                 receiver: loggedInUser,
                 userId: message.from,
                 msgContent: message.msg,
-                time: message.time ? new Date(message.time) : new Date(),
+                time: new Date(),
                 isOwn: false,
                 status: "delivered", // Incoming: always start as "delivered" (received)
               };
-
-              console.log("check text message", message);
 
               setMessages((prevMessage) => [...prevMessage, recievedMsg]);
 
@@ -118,28 +105,64 @@ const Messages = () => {
                 mid: message.id, // Use mid for the target message ID
               });
               chatClient.send(readMsg);
-              console.log("text read message", readMsg);
             }
           },
-
           onDeliveredMessage: (message) => {
+            console.log("Delivered callback:", message);
+            console.log("Looking for message.mid:", message.mid);
+
+            // Use functional update to avoid stale closure; log inside map for debugging
             setMessages((prev) => {
-              const updated = prev.map((m) =>
-                m.id === message.mid ? { ...m, status: "delivered" } : m
-              );
+              console.log(
+                "Current messages IDs (fresh):",
+                prev.map((m) => m.id),
+              ); // Now fresh!
+              let foundMatch = false;
+              const updated = prev.map((m) => {
+                if (m.id === message.mid) {
+                  foundMatch = true;
+                  console.log(
+                    "✅ Found match and updating:",
+                    m.id,
+                    "to 'delivered'",
+                  ); // Debug log
+                  return { ...m, status: "delivered" };
+                }
+                return m;
+              });
+              if (!foundMatch) {
+                console.log("❌ No match found for mid:", message.mid); // Debug: helps if array is wrong
+              }
               return updated;
             });
           },
           onReadMessage: (message) => {
-            setMessages((prev) => {
-              const updated = prev.map((m) =>
-                m.id === message.mid ? { ...m, status: "read" } : m
+            console.log("Read callback:", message); // Add log for read too
+
+            // Same as above—functional update + debug logs
+            setMessages((prevMessage) => {
+              console.log(
+                "Current messages IDs (fresh for read):",
+                prevMessage.map((m) => m.id),
               );
+              let foundMatch = false;
+              const updated = prevMessage.map((m) => {
+                if (m.id === message.mid) {
+                  foundMatch = true;
+                  console.log(
+                    "✅ Found match and updating:",
+                    m.id,
+                    "to 'read'",
+                  ); // Debug log
+                  return { ...m, status: "read" };
+                }
+                return m;
+              });
+              if (!foundMatch) {
+                console.log("❌ No match found for read mid:", message.mid);
+              }
               return updated;
             });
-          },
-          onDisconnected: () => {
-            setIsConnected(false);
           },
           onError: (error) => {
             toast.error("Error Message:" + error.message, {
@@ -163,18 +186,7 @@ const Messages = () => {
         chatClient.removeEventHandler("messageHandler");
       }
     };
-  }, [chatClient, loggedInUser, location?.state?.accessToken, navigate]);
-
-  useEffect(() => {
-    if (
-      !isConnected &&
-      chatClient &&
-      loggedInUser &&
-      location?.state?.accessToken
-    ) {
-      loginToAgora();
-    }
-  }, [isConnected, chatClient, loggedInUser, location?.state?.accessToken]);
+  }, [chatClient, location?.state, navigate, loggedInUser]);
 
   // scroll when new message arrive
   const scrollToMessage = () => {
@@ -189,20 +201,13 @@ const Messages = () => {
   const loginToAgora = async () => {
     if (chatClient.user) {
       setIsLoggedIn(true);
-      return;
-    }
-    try {
+      return; // Already logged in
+    } else {
       await chatClient.open({
         user: loggedInUser,
         accessToken: location?.state?.accessToken,
       });
       setIsLoggedIn(true);
-      toast.success("Logged in to Agora Chat");
-      navigate("/messages");
-    } catch (error) {
-      console.error("Login error:", error);
-      toast.error("Failed to log in to chat", { position: "top-center" });
-      navigate("/login");
     }
   };
 
@@ -214,7 +219,7 @@ const Messages = () => {
       });
     }
 
-    const tempId = Math.floor(Math.random() * 100000);
+    const tempId = Date.now();
     const sendingMessage = {
       id: tempId,
       receiver: selectedUser,
@@ -224,8 +229,6 @@ const Messages = () => {
       isOwn: true,
       status: "sending",
     };
-
-    console.log("sending messages", sendingMessage);
 
     setMessages((prevMessage) => [...prevMessage, sendingMessage]);
     const txtMessage = newMessage;
@@ -244,16 +247,16 @@ const Messages = () => {
 
       setMessages((prevMessage) =>
         prevMessage.map((m) =>
-          m.id === tempId ? { ...m, id: msg.id, status: "sent" } : m
-        )
+          m.id === tempId ? { ...m, id: msg.id, status: "sent" } : m,
+        ),
       );
     } catch (error) {
       toast.error(error.message, { position: "top-center" });
       // Optional: Update failed status
       setMessages((prevMessage) =>
         prevMessage.map((m) =>
-          m.id === tempId ? { ...m, status: "failed" } : m
-        )
+          m.id === tempId ? { ...m, status: "failed" } : m,
+        ),
       );
     }
   };
@@ -263,9 +266,7 @@ const Messages = () => {
       if (chatClient) {
         await chatClient.close();
       }
-      toast.info("Logged out", {
-        position: "top-center",
-      });
+      toast.success("Logged out");
       navigate("/login");
     } catch (error) {
       console.error("Logout error:", error);
@@ -301,9 +302,9 @@ const Messages = () => {
             {allUsers
               .filter((item) => item.username != loggedInUser)
               .map((item, index) => (
-                <div key={item.id}>
+                <div key={index + 1}>
                   <button
-                    onClick={() => setSelectedUser(item.username)}
+                    onClick={() => setSelecedUser(item.username)}
                     className={`mb-1 rounded-md cursor-pointer transition ${
                       item.username === selectedUser
                         ? "bg-gradient-to-r from-blue-700 to-green-700"
@@ -366,33 +367,41 @@ const Messages = () => {
 
               {/* chat area */}
               <div className="  text-white flex-1 overflow-y-auto ">
-                {filteredMessages.map((item, index) => (
-                  <div
-                    key={index + 1}
-                    className={` ${
-                      item.isOwn ? "text-right" : "text-left"
-                    } m-5`}
-                  >
-                    <div>
-                      <p className="text-[14px] text-neutral-300 font-semibold mb-[2px] px-2">
-                        {item.isOwn ? "You" : item.userId}
-                      </p>
-                      <p className="text-[11px] mb-2 text-neutral-400 font-semibold  px-2">
-                        {timeFormat(item.time)}
-                      </p>
-                    </div>
+                {messages
+                  .filter(
+                    (msg) =>
+                      (msg.userId === loggedInUser &&
+                        msg.receiver === selectedUser) ||
+                      (msg.userId === selectedUser &&
+                        msg.receiver === loggedInUser),
+                  )
+                  .map((item, index) => (
                     <div
+                      key={index + 1}
                       className={` ${
-                        item.isOwn
-                          ? "bg-gradient-to-r from-blue-600/80 to-green-700"
-                          : "bg-gradient-to-r from-white/10 to-white/20 text-neutral-200 border border-neutral-500 backdrop-blur-3xl"
-                      }  inline-block max-w-96  px-4 py-2 rounded-2xl mb-2`}
+                        item.isOwn ? "text-right" : "text-left"
+                      } m-5`}
                     >
-                      <h1 className=" text-left">{item.msgContent}</h1>
-                      {item.isOwn && messageStatusIcon(item.status)}
+                      <div>
+                        <p className="text-[14px] text-neutral-300 font-semibold mb-[2px] px-2">
+                          {item.isOwn ? "You" : item.userId}
+                        </p>
+                        <p className="text-[11px] mb-2 text-neutral-400 font-semibold  px-2">
+                          {timeFormat(item.time)}
+                        </p>
+                      </div>
+                      <div
+                        className={` ${
+                          item.isOwn
+                            ? "bg-gradient-to-r from-blue-600/80 to-green-700"
+                            : "bg-gradient-to-r from-white/10 to-white/20 text-neutral-200 border border-neutral-500 backdrop-blur-3xl"
+                        }  inline-block max-w-96  px-4 py-2 rounded-2xl mb-2`}
+                      >
+                        <h1 className=" text-left">{item.msgContent}</h1>
+                        {item.isOwn && messageStatusIcon(item.status)}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
                 <div ref={messageEndRef}></div>
               </div>
 
